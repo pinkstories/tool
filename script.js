@@ -119,7 +119,7 @@ function mengeAnpassen(index, richtung) {
 document.getElementById('scanInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const nummer = e.target.value.trim();
-    const artikel = artikelData.find(a => a.artikelnummer === nummer);
+    const artikel = ArtikelData.find(a => a.artikelnummer === nummer);
     if (!artikel) {
       alert('Artikel nicht gefunden.');
       return;
