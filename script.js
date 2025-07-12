@@ -219,6 +219,18 @@ function abschliessen() {
   });
 
   bestellungen.push(...daten);
+
+  // Speichere das Array im localStorage
+  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
+
+  alert('Bestellung gespeichert!');
+  warenkorb = [];
+  updateWarenkorb();
+}
+
+  
+
+  bestellungen.push(...daten);
   alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
