@@ -1,16 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
-<script src="KundenData.js"></script>
-<script src="ArtikelData.js"></script>
-<script src="script.js"></script>
-<meta charset="utf-8"/>
-<title>Messe Tool – Komplett</title>
-<script defer>
-    console.log(ArtikelData);
-  </script>
-<style>
+  <meta charset="utf-8"/>
+  <title>Messe Tool – Komplett</title>
+  <style>
     body { font-family: sans-serif; background: #f3f3f3; padding: 2rem; }
     .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; }
     input, select, textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; }
@@ -21,31 +14,36 @@
   </style>
 </head>
 <body>
-<div id="kundenwarnung"></div><div class="container" style="text-align: right; margin-top: 20px;">
+<div id="kundenwarnung"></div>
+<div class="container" style="text-align: right; margin-top: 20px;">
 <h1>Messe-Bestelltool</h1>
 <div style="display:flex; gap:0.5rem; align-items:center;">
-<input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
-<button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+  <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
+  <button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
 </div>
 <ul id="suchErgebnisse"></ul>
 <div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
-<h3>Neukunde anlegen</h3>
-<input id="firma" placeholder="* Firmenname"/>
-<input id="vorname" placeholder="* Vorname"/>
-<input id="nachname" placeholder="* Nachname"/>
-<input id="strasse" placeholder="* Straße"/>
-<input id="plz" placeholder="* PLZ"/>
-<input id="ort" placeholder="* Ort"/>
-<select id="land">
-<option selected="" value="Deutschland">Deutschland</option>
-<option>Österreich</option><option>Frankreich</option><option>Italien</option><option>Niederlande</option>
-</select>
-<input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
-<input id="telefon" placeholder="* Telefon"/>
-<input id="email" placeholder="* E-Mail"/>
-<button onclick="neukundeSpeichern()">Neukunde speichern</button>
-</div><div id="gespeicherteListe" style="margin-top: 10px;"></div><div id="speicherButtons" style="margin-top: 10px;">
+  <h3>Neukunde anlegen</h3>
+  <input id="firma" placeholder="* Firmenname"/>
+  <input id="vorname" placeholder="* Vorname"/>
+  <input id="nachname" placeholder="* Nachname"/>
+  <input id="strasse" placeholder="* Straße"/>
+  <input id="plz" placeholder="* PLZ"/>
+  <input id="ort" placeholder="* Ort"/>
+  <select id="land">
+    <option selected value="Deutschland">Deutschland</option>
+    <option>Österreich</option>
+    <option>Frankreich</option>
+    <option>Italien</option>
+    <option>Niederlande</option>
+  </select>
+  <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
+  <input id="telefon" placeholder="* Telefon"/>
+  <input id="email" placeholder="* E-Mail"/>
+  <button onclick="neukundeSpeichern()">Neukunde speichern</button>
 </div>
+<div id="gespeicherteListe" style="margin-top: 10px;"></div>
+<div id="speicherButtons" style="margin-top: 10px;"></div>
 <p id="aktuellerKunde"></p>
 <p id="sperrhinweis" style="color:red; font-weight:bold;"></p>
 <input id="scanInput" placeholder="Artikelnummer eingeben/scannen"/>
@@ -59,271 +57,8 @@
 <button onclick="zeigeGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">📂 Gespeicherte laden</button>
 <button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
 </div>
-<script>
-let aktuellerKunde = null;
-let warenkorb = [];
-
-function setzeKunde(kunde) {
-  document.getElementById("kundeSuche").value = "";
-  document.getElementById("suchErgebnisse").innerHTML = "";
-  aktuellerKunde = kunde;
-  document.getElementById("aktuellerKunde").textContent = "Kunde: " + kunde.name + " (" + kunde.ort + ")";
-  const sperre = kunde.gesperrt;
-  document.getElementById("sperrhinweis").textContent = sperre ? "⚠️ Dieser Kunde ist gesperrt!" : "";
-}
-
-function exportiereBestellungen() {
-  if (!aktuellerKunde || warenkorb.length === 0) {
-    alert("Bitte Kunde wählen und mindestens einen Artikel erfassen.");
-    return;
-  }
-  const lieferdatum = document.getElementById("lieferdatum").value;
-  const kommentar = document.getElementById("kommentar").value;
-
-  const zeilen = warenkorb.map(pos => {
-    const art = artikelData.find(a => a.artikelnummer === pos.artikelnummer);
-    const einzel = art.preis.toFixed(2).replace(".", ",");
-    const gesamt = (pos.menge * art.preis).toFixed(2).replace(".", ",");
-    return [
-      aktuellerKunde.name,
-      aktuellerKunde.ort,
-      art.artikelnummer,
-      art.name,
-      pos.menge,
-      einzel,
-      gesamt,
-      lieferdatum,
-      kommentar
-    ];
-  });
-  const header = ["Kunde","Ort","Artikelnummer","Artikelbezeichnung","Menge","Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"];
-  const csv = [header, ...zeilen].map(row => row.join(";")).join("\n");
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'weclapp_bestellungen.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function aktualisiereWarenkorb() {
-  const liste = document.getElementById("warenkorbListe");
-  liste.innerHTML = "";
-  let gesamt = 0;
-  warenkorb.forEach((pos, index) => {
-    const art = artikelData.find(a => a.artikelnummer === pos.artikelnummer);
-    const li = document.createElement("li");
-    li.textContent = art.artikelnummer + " – " + art.name + ": " + pos.menge + " × " + art.einheit;
-    const plus = document.createElement("button");
-    plus.textContent = "+";
-    plus.className = "green";
-    plus.onclick = () => { pos.menge += art.vielfaches; aktualisiereWarenkorb(); };
-    const minus = document.createElement("button");
-    minus.textContent = "-";
-    minus.className = "red";
-    minus.onclick = () => {
-      pos.menge -= art.vielfaches;
-      if (pos.menge <= 0) warenkorb.splice(index, 1);
-      aktualisiereWarenkorb();
-    };
-    li.appendChild(minus);
-    li.appendChild(plus);
-    liste.appendChild(li);
-    gesamt += pos.menge * art.preis;
-  });
-  document.getElementById("gesamtpreis").textContent = "Gesamt: " + gesamt.toFixed(2) + " €";
-}
-
-window.onload = () => {
-  const suchFeld = document.getElementById("kundeSuche");
-  const suchListe = document.getElementById("suchErgebnisse");
-
-  suchFeld.addEventListener("input", () => {
-    const q = suchFeld.value.toLowerCase();
-    suchListe.innerHTML = ""; document.getElementById("neukundeFormular").style.display = "none";
-    if (q.length < 2) { document.getElementById("neukundeFormular").style.display = "none"; return; }
-    kundenData.filter(k => k.name.toLowerCase().includes(q)).forEach(k => {
-      const li = document.createElement("li");
-      li.textContent = k.name + " (" + k.ort + ")" + (k.gesperrt ? " ⚠️" : "");
-      li.onclick = () => setzeKunde(k);
-      suchListe.appendChild(li);
-    });
-  });
-
-  document.getElementById("scanInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const code = e.target.value.trim();
-      const art = artikelData.find(a => a.artikelnummer === code);
-      if (art) {
-        const vorhanden = warenkorb.find(p => p.artikelnummer === code);
-        if (vorhanden) {
-          vorhanden.menge += art.vielfaches;
-        } else {
-          warenkorb.push({ artikelnummer: code, menge: art.vielfaches });
-        }
-        e.target.value = "";
-        aktualisiereWarenkorb();
-      } else {
-        alert("Artikel nicht gefunden");
-      }
-    }
-  });
-};
-
-document.getElementById("land").addEventListener("change", () => {
-  const l = document.getElementById("land").value;
-  document.getElementById("ustid").style.display = (l !== "Deutschland") ? "block" : "none";
-});
-
-function neukundeSpeichern() {
-  const kunde = {
-    name: document.getElementById("firma").value.trim(),
-    ort: document.getElementById("ort").value.trim(),
-    gesperrt: false,
-    telefon: document.getElementById("telefon").value.trim(),
-    email: document.getElementById("email").value.trim(),
-  };
-  if (!kunde.name || !kunde.ort || !document.getElementById("vorname").value.trim() ||
-      !document.getElementById("nachname").value.trim() ||
-      !document.getElementById("strasse").value.trim() ||
-      !document.getElementById("plz").value.trim() ||
-      !kunde.telefon || !kunde.email) {
-    alert("Bitte alle Pflichtfelder ausfüllen.");
-    return;
-  }
-  kundenData.push(kunde);
-  setzeKunde(kunde);
-  document.getElementById("neukundeFormular").style.display = "none";
-}
-
-
-function document.getElementById('neukundeFormular').style.display = 'block' {
-  document.getElementById("suchErgebnisse").innerHTML = "";
-  document.getElementById("kundeSuche").value = "";
-  document.getElementById("neukundeFormular").style.display = "block";
-}
-
-
-function bestellungSpeichern() {
-  if (!bestellung.kunde || !bestellung.kunde.kundennummer) {
-    alert("Bitte zuerst einen Kunden auswählen!");
-    return;
-  }
-  const key = "bestellung_" + bestellung.kunde.kundennummer;
-  localStorage.setItem(key, JSON.stringify(bestellung));
-  alert("Bestellung gespeichert unter: " + key);
-}
-
-function zeigeGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
-  const keys = Object.keys(localStorage).filter(k => k.startsWith("bestellung_"));
-  if (keys.length === 0) {
-    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
-    return;
-  }
-  keys.forEach(key => {
-    const data = JSON.parse(localStorage.getItem(key));
-    const btn = document.createElement("button");
-    btn.textContent = "#" + (data.kunde.kundennummer || "?") + " – " + (data.kunde.name || "Unbekannt");
-    btn.onclick = () => {
-      bestellung = data;
-      warenkorb = data.positionen || [];
-      aktualisiereWarenkorb();
-      document.getElementById("kundeninfo").textContent =
-        "#" + data.kunde.kundennummer + " – " + data.kunde.name;
-    };
-    const del = document.createElement("button");
-    del.textContent = "🗑️";
-    del.onclick = () => {
-      localStorage.removeItem(key);
-      zeigeGespeicherteBestellungen();
-    };
-    const wrap = document.createElement("div");
-    wrap.style.margin = "0.25rem 0";
-    wrap.appendChild(btn);
-    wrap.appendChild(del);
-    listDiv.appendChild(wrap);
-  });
-}
-
-</script>
-<script>
-const artikelliste = [
-  { artikelnummer: "6012", name: "Dip Dye Neon * Lollipop Trees", preis: 7, vielfaches: 6 },
-  { artikelnummer: "6005", name: "Dip Dye Neon * Pink Infusion", preis: 7, vielfaches: 6 }
-];
-
-const kundenliste = [
-  { Name: "Schöne Sörgelei GbR (München)", Kundennummer: "K001", Gesperrt: "Nein" },
-  { Name: "Papeterie Welle (Berlin)", Kundennummer: "K002", Gesperrt: "Ja" }
-];
-
-let warenkorb = [];
-let bestellung = { kunde: null };
-
-function sucheKunde(eingabe) {
-  const feld = document.getElementById("kundensuche");
-  const result = kundenliste.find(k => k.Name.toLowerCase().includes(eingabe.toLowerCase()));
-  const warn = document.getElementById("kundenwarnung");
-  if (result) {
-    bestellung.kunde = result;
-    warn.textContent = result.Gesperrt === "Ja" ? "⚠️ Kunde ist gesperrt!" : "";
-  }
-}
-
-function sucheArtikel(eingabe) {
-  const result = artikelliste.find(a => a.artikelnummer.includes(eingabe));
-  if (result) {
-    const vorhanden = warenkorb.find(p => p.artikelnummer === result.artikelnummer);
-    if (vorhanden) {
-      vorhanden.menge += result.vielfaches;
-    } else {
-      warenkorb.push({ ...result, menge: result.vielfaches });
-    }
-    renderWarenkorb();
-  }
-}
-
-function renderWarenkorb() {
-  const w = document.getElementById("warenkorb");
-  w.innerHTML = "";
-  warenkorb.forEach((item, i) => {
-    const zeile = document.createElement("div");
-    const gesamt = (item.preis * item.menge).toFixed(2);
-    zeile.innerHTML = `
-      <button onclick="aendereMenge(${i}, -${item.vielfaches})" class="minus">–</button>
-      ${item.artikelnummer} – ${item.name}, Menge: ${item.menge}, Preis: ${item.preis.toFixed(2)} €, Gesamt: ${gesamt} €
-      <button onclick="aendereMenge(${i}, ${item.vielfaches})" class="plus">+</button>
-    `;
-    w.appendChild(zeile);
-  });
-}
-
-function aendereMenge(i, diff) {
-  warenkorb[i].menge += diff;
-  if (warenkorb[i].menge <= 0) warenkorb.splice(i, 1);
-  renderWarenkorb();
-}
-
-function exportiereCSV() {
-  let csv = "Kundennummer;Kundenname;Artikelnummer;Menge;Einzelpreis;Gesamtpreis\n";
-  warenkorb.forEach(p => {
-    const g = p.menge * p.preis;
-    csv += `${bestellung.kunde?.Kundennummer || ""};${bestellung.kunde?.Name || ""};${p.artikelnummer};${p.menge};${p.preis};${g.toFixed(2)}\n`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "weclapp_bestellungen.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-</script><script src="KundenData.js" defer></script>
-<script src="ArtikelData.js" defer></script>
-<script src="script.js" defer></script>
+<script src="KundenData.js"></script>
+<script src="ArtikelData.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
