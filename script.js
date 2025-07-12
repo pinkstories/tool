@@ -2,6 +2,7 @@ let kunden = [...kundenData]; // aus KundenData.js
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
+let gespeicherteSichtbar = false;
 
 // DOM-Elemente
 const kundeSuche = document.getElementById('kundeSuche');
@@ -260,19 +261,13 @@ function loescheAlleBestellungen() {
   if (confirm("Alle gespeicherten Bestellungen unwiderruflich löschen?")) {
     bestellungen = [];
     localStorage.removeItem('bestellungen');
+    document.getElementById("gespeicherteListe").innerHTML = "";
+    gespeicherteSichtbar = false;
     alert("Alle Bestellungen gelöscht!");
   }
 }
-function zeigeGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
 
-  if (bestellungen.length === 0) {
-    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
-    return;
-  }
-let gespeicherteSichtbar = false;
-
+// Toggle für gespeicherte Bestellungen
 function toggleGespeicherteBestellungen() {
   const listDiv = document.getElementById("gespeicherteListe");
   if (gespeicherteSichtbar) {
@@ -283,6 +278,16 @@ function toggleGespeicherteBestellungen() {
     gespeicherteSichtbar = true;
   }
 }
+
+// Zeige gespeicherte Bestellungen
+function zeigeGespeicherteBestellungen() {
+  const listDiv = document.getElementById("gespeicherteListe");
+  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
+
+  if (bestellungen.length === 0) {
+    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
+    return;
+  }
 
   bestellungen.forEach((b, i) => {
     const wrap = document.createElement("div");
