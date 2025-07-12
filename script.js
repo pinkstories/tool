@@ -1,5 +1,5 @@
 
-let kunden = [...kundenData];
+let kunden = [...KundenData];
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = [];
