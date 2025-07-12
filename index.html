@@ -23,7 +23,7 @@
 <h1>Messe-Bestelltool</h1>
 <div style="display:flex; gap:0.5rem; align-items:center;">
 <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
-<button onclick="zeigeNeukundeFormular()" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+<button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
 </div>
 <ul id="suchErgebnisse"></ul>
 <div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
@@ -53,7 +53,7 @@
 <input id="lieferdatum" type="date"/>
 <label for="kommentar">Kommentare oder Wünsche:</label>
 <textarea id="kommentar"></textarea>
-<button onclick="speichereBestellung()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">💾 Bestellung speichern</button>
+<button onclick="abschliessen()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">💾 Bestellung speichern</button>
 <button onclick="zeigeGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">📂 Gespeicherte laden</button>
 <button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
 </div>
@@ -198,7 +198,7 @@ function neukundeSpeichern() {
 }
 
 
-function zeigeNeukundeFormular() {
+function document.getElementById('neukundeFormular').style.display = 'block' {
   document.getElementById("suchErgebnisse").innerHTML = "";
   document.getElementById("kundeSuche").value = "";
   document.getElementById("neukundeFormular").style.display = "block";

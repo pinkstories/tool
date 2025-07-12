@@ -75,6 +75,7 @@ function neukundeSpeichern() {
 
   const k = {
     name: firma,
+    Artikelnummer: '',
     ort,
     gesperrt: false,
     vorname, nachname, strasse, plz, land, ustid, telefon, email
@@ -92,7 +93,7 @@ function updateWarenkorb() {
   liste.innerHTML = '';
   let summe = 0;
   warenkorb.forEach((item, index) => {
-    const einheit = item.einheit || 'Stk';
+    const einheit = item.Einheit || item.einheit || 'Stk';
     const li = document.createElement('li');
     li.innerHTML = `
       <strong>${item.name}</strong> (${einheit})<br>
@@ -119,12 +120,12 @@ function mengeAnpassen(index, richtung) {
 document.getElementById('scanInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const nummer = e.target.value.trim();
-    const artikel = ArtikelData.find(a => String(a.Artikelnummer) === nummer);
+    const artikel = ArtikelData.find(a => String(a.Artikelnummer) === nummer || String(a.artikelnummer) === nummer);
     if (!artikel) {
       alert('Artikel nicht gefunden.');
       return;
     }
-    const vorhandener = warenkorb.find(w => w.Artikelnummer === nummer);
+    const vorhandener = warenkorb.find(w => String(w.Artikelnummer) === nummer || String(w.artikelnummer) === nummer);
     const vielfaches = artikel.vielfaches || 1;
     if (vorhandener) {
       vorhandener.menge += vielfaches;
@@ -169,10 +170,9 @@ function abschliessen() {
 
 function exportiereBestellungen() {
   if (bestellungen.length === 0) {
-    alert('Keine gespeicherten Bestellungen zum Exportieren.');
+    alert("Keine gespeicherten Bestellungen zum Exportieren.");
     return;
   }
-
   const rows = bestellungen.map(obj => [
     obj.kundenname,
     obj.ort,
@@ -185,28 +185,19 @@ function exportiereBestellungen() {
     obj.kommentar
   ]);
   const header = [
-    "Kunde",
-    "Ort",
-    "Artikelnummer",
-    "Artikelbezeichnung",
-    "Menge",
-    "Einzelpreis netto",
-    "Gesamtpreis netto",
-    "Lieferdatum",
-    "Kommentar"
+    "Kunde","Ort","Artikelnummer","Artikelbezeichnung","Menge",
+    "Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"
   ];
-
   const csv = [header, ...rows].map(row =>
-    row.map(field => typeof field === "string" ? '"' + field.replace(/"/g, '""') + '"' : field)
-    .join(";")
+    row.map(field => typeof field === "string" ? "\""+field.replace(/"/g, '""')+"\"" : field)
+      .join(";")
   ).join("
 ");
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = 'weclapp_bestellungen.csv';
+  a.download = "weclapp_bestellungen.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -223,4 +214,8 @@ function exportiereBestellungen() {
   a.download = 'messebestellungen.csv';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function zeigeGespeicherteBestellungen() {
+  alert('Funktion noch nicht implementiert.');
 }
