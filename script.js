@@ -266,10 +266,12 @@ function loescheAlleBestellungen() {
 function zeigeGespeicherteBestellungen() {
   const listDiv = document.getElementById("gespeicherteListe");
   listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
+
   if (bestellungen.length === 0) {
     listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
     return;
   }
+
   bestellungen.forEach((b, i) => {
     const wrap = document.createElement("div");
     wrap.style.margin = "0.25rem 0";
@@ -277,17 +279,22 @@ function zeigeGespeicherteBestellungen() {
     wrap.style.border = "1px solid #eee";
     wrap.style.borderRadius = "6px";
     wrap.style.background = "#f9f9f9";
+    wrap.style.fontSize = "0.97rem";
 
-    wrap.innerHTML = `<b>${b.kundenname}</b> (${b.ort})<br>
-      ${b.artikelname} (${b.artikelnummer}) &ndash; Menge: ${b.menge}<br>
-      Preis: ${b.preis} €, Gesamt: ${b.gesamtpreis} €<br>
-      Lieferdatum: ${b.lieferdatum} <br>
-      Kommentar: ${b.kommentar || "-"}<br>
-      <small>${b.zeitstempel}</small><br>`;
+    wrap.innerHTML = `
+      <b>${b.kundenname}</b> (${b.ort})<br>
+      <span style="color:#333;">${b.artikelname} (${b.artikelnummer})</span> &ndash; Menge: <b>${b.menge}</b><br>
+      Einzelpreis: ${b.preis} €, Gesamt: <b>${b.gesamtpreis} €</b><br>
+      Lieferdatum: <b>${b.lieferdatum || "-"}</b> <br>
+      Kommentar: ${b.kommentar ? b.kommentar : "-"}<br>
+      <small style="color:#888;">${b.zeitstempel ? b.zeitstempel : ""}</small>
+    `;
 
+    // Einzel-Löschen-Button
     const del = document.createElement("button");
     del.textContent = "🗑️ Löschen";
     del.className = "red";
+    del.style.marginTop = "5px";
     del.onclick = () => {
       if (confirm("Bestellung wirklich löschen?")) {
         bestellungen.splice(i, 1);
