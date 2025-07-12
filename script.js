@@ -252,7 +252,7 @@ function bestellungNachGoogleSheets() {
   });
 
   // Google Webhook-URL (deine eigene)
-  const webhookURL = "https://script.google.com/macros/s/AKfycbxh85pl-28DFpPjNaMJeJgluG7YUn7kTAdlXbCc6W7l7d9OwAO_9GhtiLw3SrM7XnhD/exec";
+  const webhookURL = "https://script.google.com/macros/s/AKfycbzhtSOSFHnRr42TWp4t7ksu4XTD4Y4Gm2iIiU4B5D6jP-ShImFRQw9D1ydBxnqwdac0/exec";
 
   fetch(webhookURL, {
     method: "POST",
