@@ -54,7 +54,17 @@
 <input id="lieferdatum" type="date"/>
 <label for="kommentar">Kommentare oder Wünsche:</label>
 <textarea id="kommentar"></textarea>
-<button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
+<div id="speicherButtons" style="margin-top: 10px;">
+  <button onclick="abschliessen()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
+    💾 Bestellung speichern
+  </button>
+  <button onclick="zeigeGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
+    📂 Gespeicherte laden
+  </button>
+  <button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
+  <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
+    🗑️ Alle Bestellungen löschen
+  </button>
 </div>
 <script src="KundenData.js"></script>
 <script src="ArtikelData.js"></script>
