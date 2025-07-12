@@ -119,12 +119,12 @@ function mengeAnpassen(index, richtung) {
 document.getElementById('scanInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const nummer = e.target.value.trim();
-    const artikel = ArtikelData.find(a => a.artikelnummer === nummer);
+    const artikel = ArtikelData.find(a => String(a.Artikelnummer) === nummer);
     if (!artikel) {
       alert('Artikel nicht gefunden.');
       return;
     }
-    const vorhandener = warenkorb.find(w => w.artikelnummer === nummer);
+    const vorhandener = warenkorb.find(w => w.Artikelnummer === nummer);
     const vielfaches = artikel.vielfaches || 1;
     if (vorhandener) {
       vorhandener.menge += vielfaches;
