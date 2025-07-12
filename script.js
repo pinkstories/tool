@@ -223,6 +223,54 @@ function abschliessen() {
   warenkorb = [];
   updateWarenkorb();
 }
+function bestellungNachGoogleSheets() {
+  if (!aktuellerKunde) {
+    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
+    return;
+  }
+  if (warenkorb.length === 0) {
+    alert('Bitte mindestens einen Artikel erfassen!');
+    return;
+  }
+
+  const lieferdatum = document.getElementById('lieferdatum').value;
+  const kommentar = document.getElementById('kommentar').value;
+
+  const daten = warenkorb.map(item => {
+    return {
+      kundenname: aktuellerKunde.name,
+      ort: aktuellerKunde.ort,
+      artikelnummer: item.Artikelnummer || item.artikelnummer,
+      artikelname: item.Name || item.name,
+      menge: item.menge,
+      preis: (item.Preis !== undefined ? item.Preis : item.preis).toFixed(2),
+      gesamtpreis: (item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2),
+      lieferdatum,
+      kommentar,
+      zeitstempel: new Date().toISOString()
+    };
+  });
+
+  // Google Webhook-URL (deine eigene)
+  const webhookURL = "https://script.google.com/macros/s/AKfycbxh85pl-28DFpPjNaMJeJgluG7YUn7kTAdlXbCc6W7l7d9OwAO_9GhtiLw3SrM7XnhD/exec";
+
+  fetch(webhookURL, {
+    method: "POST",
+    body: JSON.stringify(daten),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(res => res.json())
+  .then(res => {
+    alert("Bestellung wurde im Google Sheet gesichert!");
+    warenkorb = [];
+    updateWarenkorb();
+  })
+  .catch(err => {
+    alert("Fehler beim Senden an Google Sheets: " + err);
+  });
+}
 
 // Bestellungen als CSV exportieren
 function exportiereBestellungen() {
