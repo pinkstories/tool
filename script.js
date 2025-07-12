@@ -119,28 +119,77 @@ function mengeAnpassen(index, richtung) {
   updateWarenkorb();
 }
 
-// Artikel scannen/hinzufügen
-document.getElementById('scanInput').addEventListener('keydown', (e) => {
+// ------------- ARTIKEL-SUCHE nach Nummer ODER Namen (hier NEU) ---------------------
+const scanInput = document.getElementById('scanInput');
+const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
+
+// Vorschlagsliste für Artikelsuche
+scanInput.addEventListener('input', () => {
+  const query = scanInput.value.trim().toLowerCase();
+  artikelSuchErgebnisse.innerHTML = '';
+  if (!query) return;
+
+  // Finde alle Artikel, die passen (Nummer oder Name)
+  const treffer = ArtikelData.filter(a =>
+    (a.Name && a.Name.toLowerCase().includes(query)) ||
+    (a.Artikelnummer && String(a.Artikelnummer).includes(query))
+  );
+
+  if (treffer.length === 1 && String(treffer[0].Artikelnummer) === query) {
+    // Exakte Nummer, dann Vorschlagsliste nicht anzeigen (Enter übernimmt sowieso)
+    return;
+  }
+
+  treffer.slice(0, 8).forEach(artikel => {
+    const li = document.createElement('li');
+    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
+    li.style.cursor = 'pointer';
+    li.onclick = () => {
+      const vielfaches = artikel.Einheit || artikel.einheit || 1;
+      const vorhanden = warenkorb.find(w =>
+        String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
+      );
+      if (vorhanden) {
+        vorhanden.menge += vielfaches;
+      } else {
+        warenkorb.push({ ...artikel, menge: vielfaches });
+      }
+      updateWarenkorb();
+      artikelSuchErgebnisse.innerHTML = '';
+      scanInput.value = '';
+      scanInput.focus();
+    };
+    artikelSuchErgebnisse.appendChild(li);
+  });
+});
+
+// ENTER-Funktion für Artikelfeld
+scanInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
-    const nummer = e.target.value.trim();
+    const eingabe = scanInput.value.trim();
+    // Exakte Nummer?
     const artikel = ArtikelData.find(a =>
-      String(a.Artikelnummer || a.artikelnummer) === nummer
+      String(a.Artikelnummer) === eingabe
     );
-    if (!artikel) {
-      alert('Artikel nicht gefunden.');
-      return;
-    }
-    const vielfaches = artikel.Einheit || artikel.einheit || 1;
-    const vorhandener = warenkorb.find(w =>
-      String(w.Artikelnummer || w.artikelnummer) === nummer
-    );
-    if (vorhandener) {
-      vorhandener.menge += vielfaches;
+    if (artikel) {
+      const vielfaches = artikel.Einheit || artikel.einheit || 1;
+      const vorhandener = warenkorb.find(w =>
+        String(w.Artikelnummer || w.artikelnummer) === eingabe
+      );
+      if (vorhandener) {
+        vorhandener.menge += vielfaches;
+      } else {
+        warenkorb.push({ ...artikel, menge: vielfaches });
+      }
+      updateWarenkorb();
+      scanInput.value = '';
+      artikelSuchErgebnisse.innerHTML = '';
+    } else if (artikelSuchErgebnisse.children.length > 0) {
+      // Enter und es gibt Vorschläge -> nimm ersten Vorschlag
+      artikelSuchErgebnisse.firstChild.click();
     } else {
-      warenkorb.push({ ...artikel, menge: vielfaches });
+      alert('Artikel nicht gefunden.');
     }
-    updateWarenkorb();
-    e.target.value = '';
   }
 });
 
