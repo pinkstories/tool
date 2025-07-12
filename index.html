@@ -39,8 +39,6 @@
 <input id="email" placeholder="* E-Mail"/>
 <button onclick="neukundeSpeichern()">Neukunde speichern</button>
 </div><div id="gespeicherteListe" style="margin-top: 10px;"></div><div id="speicherButtons" style="margin-top: 10px;">
-<button onclick="speichereBestellung()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">💾 Bestellung speichern</button>
-<button onclick="zeigeGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">📂 Gespeicherte laden</button>
 </div>
 <p id="aktuellerKunde"></p>
 <p id="sperrhinweis" style="color:red; font-weight:bold;"></p>
@@ -51,6 +49,8 @@
 <input id="lieferdatum" type="date"/>
 <label for="kommentar">Kommentare oder Wünsche:</label>
 <textarea id="kommentar"></textarea>
+<button onclick="speichereBestellung()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">💾 Bestellung speichern</button>
+<button onclick="zeigeGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">📂 Gespeicherte laden</button>
 <button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
 </div>
 <script>
