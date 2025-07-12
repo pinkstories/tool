@@ -91,4 +91,125 @@ function neukundeSpeichern() {
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
-  liste.inner
+  liste.innerHTML = '';
+  let summe = 0;
+  warenkorb.forEach((item, index) => {
+    const einheit = item.Einheit || item.einheit || 'Stk';
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${item.Name || item.name}</strong> (${einheit})<br>
+      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
+      ${item.menge} × ${item.Preis !== undefined ? item.Preis.toFixed(2) : item.preis.toFixed(2)} € = ${(item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2)} €
+      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
+    `;
+    liste.appendChild(li);
+    summe += item.menge * (item.Preis !== undefined ? item.Preis : item.preis);
+  });
+  preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
+}
+
+// Warenkorb-Menge ändern
+function mengeAnpassen(index, richtung) {
+  const artikel = warenkorb[index];
+  const einheitMenge = artikel.Einheit || artikel.einheit || 1;
+  artikel.menge += richtung * einheitMenge;
+  if (artikel.menge < einheitMenge) {
+    warenkorb.splice(index, 1);
+  }
+  updateWarenkorb();
+}
+
+// Artikel scannen/hinzufügen
+document.getElementById('scanInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const nummer = e.target.value.trim();
+    const artikel = ArtikelData.find(a =>
+      String(a.Artikelnummer || a.artikelnummer) === nummer
+    );
+    if (!artikel) {
+      alert('Artikel nicht gefunden.');
+      return;
+    }
+    const vielfaches = artikel.Einheit || artikel.einheit || 1;
+    const vorhandener = warenkorb.find(w =>
+      String(w.Artikelnummer || w.artikelnummer) === nummer
+    );
+    if (vorhandener) {
+      vorhandener.menge += vielfaches;
+    } else {
+      warenkorb.push({ ...artikel, menge: vielfaches });
+    }
+    updateWarenkorb();
+    e.target.value = '';
+  }
+});
+
+// Bestellung speichern
+function abschliessen() {
+  if (!aktuellerKunde) {
+    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
+    return;
+  }
+
+  const lieferdatum = document.getElementById('lieferdatum').value;
+  const kommentar = document.getElementById('kommentar').value;
+
+  const daten = warenkorb.map(item => {
+    return {
+      kundenname: aktuellerKunde.name,
+      ort: aktuellerKunde.ort,
+      artikelnummer: item.Artikelnummer || item.artikelnummer,
+      artikelname: item.Name || item.name,
+      menge: item.menge,
+      preis: (item.Preis !== undefined ? item.Preis : item.preis).toFixed(2),
+      gesamtpreis: (item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2),
+      lieferdatum,
+      kommentar,
+      zeitstempel: new Date().toISOString()
+    };
+  });
+
+  bestellungen.push(...daten);
+  alert('Bestellung gespeichert!');
+  warenkorb = [];
+  updateWarenkorb();
+}
+
+// Bestellungen als CSV exportieren
+function exportiereBestellungen() {
+  if (bestellungen.length === 0) {
+    alert("Keine gespeicherten Bestellungen zum Exportieren.");
+    return;
+  }
+  const rows = bestellungen.map(obj => [
+    obj.kundenname,
+    obj.ort,
+    obj.artikelnummer,
+    obj.artikelname,
+    obj.menge,
+    obj.preis,
+    obj.gesamtpreis,
+    obj.lieferdatum,
+    obj.kommentar
+  ]);
+  const header = [
+    "Kunde","Ort","Artikelnummer","Artikelbezeichnung","Menge",
+    "Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"
+  ];
+  const csv = [header, ...rows].map(row =>
+    row.map(field => typeof field === "string" ? "\""+field.replace(/"/g, '""')+"\"" : field)
+      .join(";")
+  ).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "weclapp_bestellungen.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Noch nicht implementiert:
+function zeigeGespeicherteBestellungen() {
+  alert('Funktion noch nicht implementiert.');
+}
