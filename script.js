@@ -1,14 +1,17 @@
 let kunden = [...kundenData]; // aus KundenData.js
 let aktuellerKunde = null;
 let warenkorb = [];
-let bestellungen = [];
+let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
 
+// DOM-Elemente
 const kundeSuche = document.getElementById('kundeSuche');
 const suchErgebnisse = document.getElementById('suchErgebnisse');
 const aktuellerKundeAnzeige = document.getElementById('aktuellerKunde');
 const sperrhinweis = document.getElementById('sperrhinweis');
 const ustidFeld = document.getElementById('ustid');
 const landDropdown = document.getElementById('land');
+const scanInput = document.getElementById('scanInput');
+const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
 // USt-ID-Feld nur bei EU-Ausland anzeigen
 landDropdown.addEventListener('change', () => {
@@ -119,26 +122,18 @@ function mengeAnpassen(index, richtung) {
   updateWarenkorb();
 }
 
-// ------------- ARTIKEL-SUCHE nach Nummer ODER Namen (hier NEU) ---------------------
-const scanInput = document.getElementById('scanInput');
-const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
-
-// Vorschlagsliste für Artikelsuche
+// Artikel-Suche: nach Nummer ODER Namen
 scanInput.addEventListener('input', () => {
   const query = scanInput.value.trim().toLowerCase();
   artikelSuchErgebnisse.innerHTML = '';
   if (!query) return;
 
-  // Finde alle Artikel, die passen (Nummer oder Name)
   const treffer = ArtikelData.filter(a =>
     (a.Name && a.Name.toLowerCase().includes(query)) ||
     (a.Artikelnummer && String(a.Artikelnummer).includes(query))
   );
 
-  if (treffer.length === 1 && String(treffer[0].Artikelnummer) === query) {
-    // Exakte Nummer, dann Vorschlagsliste nicht anzeigen (Enter übernimmt sowieso)
-    return;
-  }
+  if (treffer.length === 1 && String(treffer[0].Artikelnummer) === query) return;
 
   treffer.slice(0, 8).forEach(artikel => {
     const li = document.createElement('li');
@@ -167,7 +162,6 @@ scanInput.addEventListener('input', () => {
 scanInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const eingabe = scanInput.value.trim();
-    // Exakte Nummer?
     const artikel = ArtikelData.find(a =>
       String(a.Artikelnummer) === eingabe
     );
@@ -185,7 +179,6 @@ scanInput.addEventListener('keydown', (e) => {
       scanInput.value = '';
       artikelSuchErgebnisse.innerHTML = '';
     } else if (artikelSuchErgebnisse.children.length > 0) {
-      // Enter und es gibt Vorschläge -> nimm ersten Vorschlag
       artikelSuchErgebnisse.firstChild.click();
     } else {
       alert('Artikel nicht gefunden.');
@@ -193,7 +186,7 @@ scanInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Bestellung speichern
+// Bestellung speichern – und dauerhaft sichern!
 function abschliessen() {
   if (!aktuellerKunde) {
     alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
@@ -220,68 +213,12 @@ function abschliessen() {
 
   bestellungen.push(...daten);
 
-  // Speichere das Array im localStorage
+  // SPEICHERE das Array IM localStorage
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
 
   alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
-}
-
-  
-
-  bestellungen.push(...daten);
-  alert('Bestellung gespeichert!');
-  warenkorb = [];
-  updateWarenkorb();
-}
-function bestellungNachGoogleSheets() {
-  if (!aktuellerKunde) {
-    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
-    return;
-  }
-  if (warenkorb.length === 0) {
-    alert('Bitte mindestens einen Artikel erfassen!');
-    return;
-  }
-
-  const lieferdatum = document.getElementById('lieferdatum').value;
-  const kommentar = document.getElementById('kommentar').value;
-
-  const daten = warenkorb.map(item => {
-    return {
-      kundenname: aktuellerKunde.name,
-      ort: aktuellerKunde.ort,
-      artikelnummer: item.Artikelnummer || item.artikelnummer,
-      artikelname: item.Name || item.name,
-      menge: item.menge,
-      preis: (item.Preis !== undefined ? item.Preis : item.preis).toFixed(2),
-      gesamtpreis: (item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2),
-      lieferdatum,
-      kommentar,
-      zeitstempel: new Date().toISOString()
-    };
-  });
-
-  // Google Webhook-URL (deine eigene)
-  const webhookURL = "https://script.google.com/macros/s/AKfycbxYaBLZNlc_HR0a7Y2Sj2NRWr9itchwuqizSr4WUn3Mcyjn7mdPZSe19ZMmE-AuBk_qFQ/exec";
-
-  fetch(webhookURL, {
-    method: "POST",
-    body: JSON.stringify(daten),
-    headers: {
-      "Content-Type": "application/json"
-    }
-  })
-  .then(res => res.json())
-  .then(res => {
-    alert("Bestellung wurde im Google Sheet gesichert!");
-    warenkorb = [];
-    updateWarenkorb();
-  })
-  .catch(err => {
-    alert("Fehler beim Senden an Google Sheets: " + err);
-  });
 }
 
 // Bestellungen als CSV exportieren
@@ -316,6 +253,15 @@ function exportiereBestellungen() {
   a.download = "weclapp_bestellungen.csv";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// Optional: Alle gespeicherten Bestellungen löschen
+function loescheAlleBestellungen() {
+  if (confirm("Alle gespeicherten Bestellungen unwiderruflich löschen?")) {
+    bestellungen = [];
+    localStorage.removeItem('bestellungen');
+    alert("Alle Bestellungen gelöscht!");
+  }
 }
 
 // Noch nicht implementiert:
