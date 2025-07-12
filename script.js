@@ -271,6 +271,18 @@ function zeigeGespeicherteBestellungen() {
     listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
     return;
   }
+let gespeicherteSichtbar = false;
+
+function toggleGespeicherteBestellungen() {
+  const listDiv = document.getElementById("gespeicherteListe");
+  if (gespeicherteSichtbar) {
+    listDiv.innerHTML = "";
+    gespeicherteSichtbar = false;
+  } else {
+    zeigeGespeicherteBestellungen();
+    gespeicherteSichtbar = true;
+  }
+}
 
   bestellungen.forEach((b, i) => {
     const wrap = document.createElement("div");
