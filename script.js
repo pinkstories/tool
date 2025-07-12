@@ -263,8 +263,40 @@ function loescheAlleBestellungen() {
     alert("Alle Bestellungen gelöscht!");
   }
 }
-
-// Noch nicht implementiert:
 function zeigeGespeicherteBestellungen() {
-  alert('Funktion noch nicht implementiert.');
+  const listDiv = document.getElementById("gespeicherteListe");
+  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
+  if (bestellungen.length === 0) {
+    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
+    return;
+  }
+  bestellungen.forEach((b, i) => {
+    const wrap = document.createElement("div");
+    wrap.style.margin = "0.25rem 0";
+    wrap.style.padding = "0.5rem";
+    wrap.style.border = "1px solid #eee";
+    wrap.style.borderRadius = "6px";
+    wrap.style.background = "#f9f9f9";
+
+    wrap.innerHTML = `<b>${b.kundenname}</b> (${b.ort})<br>
+      ${b.artikelname} (${b.artikelnummer}) &ndash; Menge: ${b.menge}<br>
+      Preis: ${b.preis} €, Gesamt: ${b.gesamtpreis} €<br>
+      Lieferdatum: ${b.lieferdatum} <br>
+      Kommentar: ${b.kommentar || "-"}<br>
+      <small>${b.zeitstempel}</small><br>`;
+
+    const del = document.createElement("button");
+    del.textContent = "🗑️ Löschen";
+    del.className = "red";
+    del.onclick = () => {
+      if (confirm("Bestellung wirklich löschen?")) {
+        bestellungen.splice(i, 1);
+        localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
+        zeigeGespeicherteBestellungen();
+      }
+    };
+    wrap.appendChild(del);
+
+    listDiv.appendChild(wrap);
+  });
 }
