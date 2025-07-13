@@ -45,7 +45,7 @@ kundeSuche.addEventListener('input', () => {
 
   treffer.slice(0, 10).forEach(k => {
     const li = document.createElement('li');
-    li.textContent = \`\${k.name} (\${k.ort})\${k.gesperrt ? ' ⚠️' : ''}\`;
+    li.textContent = \`\${k.name} (\${k.ort})\${k.gesperrt ? ' ⚠️' : ''}`;
     li.onclick = () => {
       aktuellerKunde = k;
       aktuellerKundeAnzeige.textContent = \`Kunde: \${k.name} (\${k.ort})\`;
