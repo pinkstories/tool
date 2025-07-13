@@ -135,7 +135,7 @@ scanInput.addEventListener('input', () => {
 
   if (treffer.length === 1 && String(treffer[0].Artikelnummer) === query) return;
 
-  treffer.slice(0, 8).forEach(artikel => {
+  treffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
     li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
     li.style.cursor = 'pointer';
