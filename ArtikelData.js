@@ -439,7 +439,7 @@ const ArtikelData = [
   { Artikelnummer: 2070, Name: "Get Away * Venice Sunset", Einheit: 3, Preis: 16.00 },
   { Artikelnummer: 2071, Name: "Get Away * Venice Rollerskates", Einheit: 3, Preis: 16.00 },
   { Artikelnummer: 2072, Name: "Get Away * Venice Beach", Einheit: 3, Preis: 16.00 },
-  { Artikelnummer: 2073, Name: "Matches * Pink "Are you on Fire" Give Away", Einheit: 12, Preis: 2.00 },
+  { Artikelnummer: 2073, Name: "Matches * Pink Are you on Fire" Give Away, Einheit: 12, Preis: 2.00 },
   { Artikelnummer: 2075, Name: "Get Away * Nizza Sundowner", Einheit: 3, Preis: 16.00 },
   { Artikelnummer: 2076, Name: "Get Away * Nizza Cocktail Hour", Einheit: 3, Preis: 16.00 },
   { Artikelnummer: 2077, Name: "Get Away * Smeralda Costa", Einheit: 3, Preis: 16.00 },
