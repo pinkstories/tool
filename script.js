@@ -220,6 +220,29 @@ function abschliessen() {
   alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
+  
+  // Formular und Status zurücksetzen
+document.getElementById('lieferdatum').value = '';
+document.getElementById('kommentar').value = '';
+document.getElementById('aktuellerKunde').textContent = '';
+document.getElementById('sperrhinweis').textContent = '';
+aktuellerKunde = null;
+warenkorb = [];
+updateWarenkorb();
+  document.getElementById('kundeSuche').value = '';
+  // Neukundenformular zurücksetzen (optional, falls sichtbar)
+document.getElementById('firma').value = '';
+document.getElementById('vorname').value = '';
+document.getElementById('nachname').value = '';
+document.getElementById('strasse').value = '';
+document.getElementById('plz').value = '';
+document.getElementById('ort').value = '';
+document.getElementById('land').value = 'Deutschland';
+document.getElementById('ustid').value = '';
+document.getElementById('telefon').value = '';
+document.getElementById('email').value = '';
+document.getElementById('neukundeFormular').style.display = 'none';
+document.getElementById('ustid').style.display = 'none';
 }
 
 // Bestellungen als CSV exportieren
