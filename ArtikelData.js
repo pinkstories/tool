@@ -594,7 +594,7 @@ const ArtikelData = [
   { Artikelnummer: 2260, Name: "Bauhaus Quadrat 2", Einheit: 6, Preis: 2.25 },
   { Artikelnummer: 2261, Name: "Tanne pink", Einheit: 6, Preis: 2.25 },
   { Artikelnummer: 2262, Name: "Sway 100% * Silk blue", Einheit: 3, Preis: 16.00 },
-  { Artikelnummer: 2263, Name: "Sway 150% * White", Einheit: 3, Preis: nan },
+  { Artikelnummer: 2263, Name: "Sway 150% * White", Einheit: 3, Preis: 26.00 },
   { Artikelnummer: 2264, Name: "Sway 150% * Mocca", Einheit: 3, Preis: 26.00 },
   { Artikelnummer: 2265, Name: "Sway 150% * Chocolate", Einheit: 3, Preis: 26.00 },
   { Artikelnummer: 2266, Name: "Sway 150% * Black", Einheit: 3, Preis: 26.00 },
