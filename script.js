@@ -1,3 +1,4 @@
+
 let kunden = [...kundenData]; // aus KundenData.js
 let aktuellerKunde = null;
 let warenkorb = [];
@@ -44,10 +45,10 @@ kundeSuche.addEventListener('input', () => {
 
   treffer.slice(0, 10).forEach(k => {
     const li = document.createElement('li');
-    li.textContent = `${k.name} (${k.ort})${k.gesperrt ? ' ⚠️' : ''}`;
+    li.textContent = \`\${k.name} (\${k.ort})\${k.gesperrt ? ' ⚠️' : ''}\`;
     li.onclick = () => {
       aktuellerKunde = k;
-      aktuellerKundeAnzeige.textContent = `Kunde: ${k.name} (${k.ort})`;
+      aktuellerKundeAnzeige.textContent = \`Kunde: \${k.name} (\${k.ort})\`;
       sperrhinweis.textContent = k.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
       suchErgebnisse.innerHTML = '';
       kundeSuche.value = '';
@@ -86,7 +87,7 @@ function neukundeSpeichern() {
   };
   kunden.push(k);
   aktuellerKunde = k;
-  aktuellerKundeAnzeige.textContent = `Neukunde: ${firma} (${ort})`;
+  aktuellerKundeAnzeige.textContent = \`Neukunde: \${firma} (\${ort})\`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
 }
@@ -100,19 +101,18 @@ function updateWarenkorb() {
   warenkorb.forEach((item, index) => {
     const einheit = item.Einheit || item.einheit || 'Stk';
     const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${item.Name || item.name}</strong> (${einheit})<br>
-      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
-      ${item.menge} × ${item.Preis !== undefined ? item.Preis.toFixed(2) : item.preis.toFixed(2)} € = ${(item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2)} €
-      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
-    `;
+    li.innerHTML = \`
+      <strong>\${item.Name || item.name}</strong> (\${einheit})<br>
+      <button class="red" onclick="mengeAnpassen(\${index}, -1)">-</button>
+      \${item.menge} × \${(item.Preis !== undefined ? item.Preis : item.preis).toFixed(2)} € = \${(item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2)} €
+      <button class="green" onclick="mengeAnpassen(\${index}, 1)">+</button>
+    \`;
     liste.appendChild(li);
     summe += item.menge * (item.Preis !== undefined ? item.Preis : item.preis);
   });
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
-// Warenkorb-Menge ändern
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
@@ -123,7 +123,6 @@ function mengeAnpassen(index, richtung) {
   updateWarenkorb();
 }
 
-// Artikel-Suche: nach Nummer ODER Namen
 scanInput.addEventListener('input', () => {
   const query = scanInput.value.trim().toLowerCase();
   artikelSuchErgebnisse.innerHTML = '';
@@ -138,7 +137,7 @@ scanInput.addEventListener('input', () => {
 
   treffer.slice(0, 8).forEach(artikel => {
     const li = document.createElement('li');
-    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
+    li.textContent = \`\${artikel.Name} (\${artikel.Artikelnummer})\`;
     li.style.cursor = 'pointer';
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
@@ -159,7 +158,6 @@ scanInput.addEventListener('input', () => {
   });
 });
 
-// ENTER-Funktion für Artikelfeld
 scanInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const eingabe = scanInput.value.trim();
@@ -169,7 +167,7 @@ scanInput.addEventListener('keydown', (e) => {
     if (artikel) {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhandener = warenkorb.find(w =>
-        String(w.Artikelnummer || w.artikelnummer) === eingabe
+        String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
       );
       if (vorhandener) {
         vorhandener.menge += vielfaches;
@@ -186,164 +184,3 @@ scanInput.addEventListener('keydown', (e) => {
     }
   }
 });
-
-// Bestellung speichern – und dauerhaft sichern!
-function abschliessen() {
-  if (!aktuellerKunde) {
-    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
-    return;
-  }
-
-  const lieferdatum = document.getElementById('lieferdatum').value;
-  const kommentar = document.getElementById('kommentar').value;
-
-  const daten = warenkorb.map(item => {
-    return {
-      kundenname: aktuellerKunde.name,
-      ort: aktuellerKunde.ort,
-      artikelnummer: item.Artikelnummer || item.artikelnummer,
-      artikelname: item.Name || item.name,
-      menge: item.menge,
-      preis: (item.Preis !== undefined ? item.Preis : item.preis).toFixed(2),
-      gesamtpreis: (item.menge * (item.Preis !== undefined ? item.Preis : item.preis)).toFixed(2),
-      lieferdatum,
-      kommentar,
-      zeitstempel: new Date().toISOString()
-    };
-  });
-
-  bestellungen.push(...daten);
-
-  // SPEICHERE das Array IM localStorage
-  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
-
-  alert('Bestellung gespeichert!');
-  warenkorb = [];
-  updateWarenkorb();
-  
-  // Formular und Status zurücksetzen
-document.getElementById('lieferdatum').value = '';
-document.getElementById('kommentar').value = '';
-document.getElementById('aktuellerKunde').textContent = '';
-document.getElementById('sperrhinweis').textContent = '';
-aktuellerKunde = null;
-warenkorb = [];
-updateWarenkorb();
-  document.getElementById('kundeSuche').value = '';
-  // Neukundenformular zurücksetzen (optional, falls sichtbar)
-document.getElementById('firma').value = '';
-document.getElementById('vorname').value = '';
-document.getElementById('nachname').value = '';
-document.getElementById('strasse').value = '';
-document.getElementById('plz').value = '';
-document.getElementById('ort').value = '';
-document.getElementById('land').value = 'Deutschland';
-document.getElementById('ustid').value = '';
-document.getElementById('telefon').value = '';
-document.getElementById('email').value = '';
-document.getElementById('neukundeFormular').style.display = 'none';
-document.getElementById('ustid').style.display = 'none';
-}
-
-// Bestellungen als CSV exportieren
-function exportiereBestellungen() {
-  if (bestellungen.length === 0) {
-    alert("Keine gespeicherten Bestellungen zum Exportieren.");
-    return;
-  }
-  const rows = bestellungen.map(obj => [
-    obj.kundenname,
-    obj.ort,
-    obj.artikelnummer,
-    obj.artikelname,
-    obj.menge,
-    obj.preis,
-    obj.gesamtpreis,
-    obj.lieferdatum,
-    obj.kommentar
-  ]);
-  const header = [
-    "Kunde","Ort","Artikelnummer","Artikelbezeichnung","Menge",
-    "Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"
-  ];
-  const csv = [header, ...rows].map(row =>
-    row.map(field => typeof field === "string" ? "\""+field.replace(/"/g, '""')+"\"" : field)
-      .join(";")
-  ).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "weclapp_bestellungen.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// Optional: Alle gespeicherten Bestellungen löschen
-function loescheAlleBestellungen() {
-  if (confirm("Alle gespeicherten Bestellungen unwiderruflich löschen?")) {
-    bestellungen = [];
-    localStorage.removeItem('bestellungen');
-    document.getElementById("gespeicherteListe").innerHTML = "";
-    gespeicherteSichtbar = false;
-    alert("Alle Bestellungen gelöscht!");
-  }
-}
-
-// Toggle für gespeicherte Bestellungen
-function toggleGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  if (gespeicherteSichtbar) {
-    listDiv.innerHTML = "";
-    gespeicherteSichtbar = false;
-  } else {
-    zeigeGespeicherteBestellungen();
-    gespeicherteSichtbar = true;
-  }
-}
-
-// Zeige gespeicherte Bestellungen
-function zeigeGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
-
-  if (bestellungen.length === 0) {
-    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
-    return;
-  }
-
-  bestellungen.forEach((b, i) => {
-    const wrap = document.createElement("div");
-    wrap.style.margin = "0.25rem 0";
-    wrap.style.padding = "0.5rem";
-    wrap.style.border = "1px solid #eee";
-    wrap.style.borderRadius = "6px";
-    wrap.style.background = "#f9f9f9";
-    wrap.style.fontSize = "0.97rem";
-
-    wrap.innerHTML = `
-      <b>${b.kundenname}</b> (${b.ort})<br>
-      <span style="color:#333;">${b.artikelname} (${b.artikelnummer})</span> &ndash; Menge: <b>${b.menge}</b><br>
-      Einzelpreis: ${b.preis} €, Gesamt: <b>${b.gesamtpreis} €</b><br>
-      Lieferdatum: <b>${b.lieferdatum || "-"}</b> <br>
-      Kommentar: ${b.kommentar ? b.kommentar : "-"}<br>
-      <small style="color:#888;">${b.zeitstempel ? b.zeitstempel : ""}</small>
-    `;
-
-    // Einzel-Löschen-Button
-    const del = document.createElement("button");
-    del.textContent = "🗑️ Löschen";
-    del.className = "red";
-    del.style.marginTop = "5px";
-    del.onclick = () => {
-      if (confirm("Bestellung wirklich löschen?")) {
-        bestellungen.splice(i, 1);
-        localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
-        zeigeGespeicherteBestellungen();
-      }
-    };
-    wrap.appendChild(del);
-
-    listDiv.appendChild(wrap);
-  });
-}
