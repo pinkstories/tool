@@ -90,7 +90,7 @@ function neukundeSpeichern() {
   document.getElementById('neukundeFormular').style.display = 'none';
 
   // Google Sheets speichern
-fetch('https://script.google.com/macros/s/AKfycbxJ8XB9vJ_AzYOgHcpgde97PRSHx4SShuu1sAX2u6OVjvvJC1gIPVZliZK7d38QACmg/exec', {
+fetch('https://script.google.com/macros/s/AKfycbxw6if67_TH0HCFhSS8nV7poYjJUvHf7Uo4JDOfXVnnDmCPVxzORwODg2LJTPxA4_6-/exec', {
   method: 'POST',
   body: JSON.stringify(k),
   headers: {
