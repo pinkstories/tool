@@ -88,6 +88,27 @@ function neukundeSpeichern() {
   aktuellerKundeAnzeige.textContent = `Neukunde: ${firma} (${ort})`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
+
+  // Google Sheets speichern
+fetch('https://script.google.com/macros/s/AKfycbwuPKoMk3ua1GbRhiIKNSKp6QYMA6HCrzWmFSD3lY7fzJ3JshK58wXX3DMA6znLumDC/exec', {
+  method: 'POST',
+  body: JSON.stringify(k),
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+.then(res => res.json())
+.then(data => {
+  if (data.success) {
+    console.log("Kunde wurde in Google Sheets gespeichert.");
+  } else {
+    console.error("Fehler beim Speichern in Google Sheets.");
+  }
+})
+.catch(err => {
+  console.error("Fetch-Fehler:", err);
+});
+
 }
 
 // Warenkorb aktualisieren
