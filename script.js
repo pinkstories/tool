@@ -203,7 +203,7 @@ function abschliessen() {
   const kommentar = document.getElementById('kommentar').value;
 
   const daten = warenkorb.map(item => ({
-    kundenname: aktuellerKunde.name,
+    kundenname: aktuellerKunde.name || '',
     vorname: aktuellerKunde.vorname || '',
     nachname: aktuellerKunde.nachname || '',
     strasse: aktuellerKunde.strasse || '',
