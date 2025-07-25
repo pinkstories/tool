@@ -224,33 +224,43 @@ function abschliessen() {
   const lieferdatum = document.getElementById('lieferdatum').value;
   const kommentar = document.getElementById('kommentar').value;
 
-  const daten = warenkorb.map(item => ({
-    kundenname: aktuellerKunde.name || '',
-    vorname: aktuellerKunde.vorname || '',
-    nachname: aktuellerKunde.nachname || '',
-    strasse: aktuellerKunde.strasse || '',
-    plz: aktuellerKunde.plz || '',
-    ort: aktuellerKunde.ort || '',
-    land: aktuellerKunde.land || '',
-    ustid: aktuellerKunde.ustid || '',
-    telefon: aktuellerKunde.telefon || '',
-    email: aktuellerKunde.email || '',
-    artikelnummer: item.Artikelnummer || item.artikelnummer,
-    artikelname: item.Name || item.name,
-    menge: item.menge,
-    preis: (item.Preis ?? item.preis).toFixed(2),
-    gesamtpreis: (item.menge * (item.Preis ?? item.preis)).toFixed(2),
+  const neueBestellung = {
+    kunde: aktuellerKunde,
     lieferdatum,
     kommentar,
-    zeitstempel: new Date().toISOString()
-  }));
+    zeitstempel: new Date().toISOString(),
+    positionen: warenkorb.map(item => ({
+      artikelnummer: item.Artikelnummer || item.artikelnummer,
+      artikelname: item.Name || item.name,
+      menge: item.menge,
+      preis: (item.Preis ?? item.preis).toFixed(2),
+      gesamtpreis: (item.menge * (item.Preis ?? item.preis)).toFixed(2)
+    }))
+  };
 
-  bestellungen.push(...daten);
+  bestellungen.push(neueBestellung);
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
 
   alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
+
+  // Formular zurücksetzen
+  document.getElementById('lieferdatum').value = '';
+  document.getElementById('kommentar').value = '';
+  kundeSuche.value = '';
+  aktuellerKundeAnzeige.textContent = '';
+  sperrhinweis.textContent = '';
+  aktuellerKunde = null;
+
+  // Neukundenformular zurücksetzen
+  ['firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('land').value = 'Deutschland';
+  document.getElementById('neukundeFormular').style.display = 'none';
+  document.getElementById('ustid').style.display = 'none';
+}
 
   // Formular zurücksetzen
   document.getElementById('lieferdatum').value = '';
@@ -347,36 +357,56 @@ function zeigeGespeicherteBestellungen() {
     return;
   }
 
-  bestellungen.forEach((b, i) => {
+  bestellungen.forEach((bestellung, i) => {
     const wrap = document.createElement("div");
-    wrap.style.margin = "0.25rem 0";
+    wrap.style.margin = "0.5rem 0";
     wrap.style.padding = "0.5rem";
-    wrap.style.border = "1px solid #eee";
+    wrap.style.border = "1px solid #ccc";
     wrap.style.borderRadius = "6px";
     wrap.style.background = "#f9f9f9";
-    wrap.style.fontSize = "0.97rem";
 
     wrap.innerHTML = `
-      <b>${b.kundenname}</b> (${b.ort})<br>
-      <span style="color:#333;">${b.artikelname} (${b.artikelnummer})</span> – Menge: <b>${b.menge}</b><br>
-      Einzelpreis: ${b.preis} €, Gesamt: <b>${b.gesamtpreis} €</b><br>
-      Lieferdatum: <b>${b.lieferdatum || "-"}</b><br>
-      Kommentar: ${b.kommentar || "-"}<br>
-      <small style="color:#888;">${b.zeitstempel || ""}</small>
+      <b>${bestellung.kunde.name}</b> (${bestellung.kunde.ort})<br>
+      <i>Lieferdatum:</i> ${bestellung.lieferdatum || "-"}<br>
+      <i>Kommentar:</i> ${bestellung.kommentar || "-"}<br>
+      <ul style="margin:0.5rem 0; padding-left:1.2rem;">
+        ${bestellung.positionen.map(p => `
+          <li>${p.artikelname} (${p.artikelnummer}) – ${p.menge} × ${p.preis} € = <b>${p.gesamtpreis} €</b></li>
+        `).join("")}
+      </ul>
+      <small style="color:#888;">${bestellung.zeitstempel}</small><br>
     `;
 
-    const del = document.createElement("button");
-    del.textContent = "🗑️ Löschen";
-    del.className = "red";
-    del.style.marginTop = "5px";
-    del.onclick = () => {
+    const reaktivieren = document.createElement("button");
+    reaktivieren.textContent = "⏪ Reaktivieren";
+    reaktivieren.className = "blue";
+    reaktivieren.onclick = () => {
+      aktuellerKunde = bestellung.kunde;
+      warenkorb = bestellung.positionen.map(p => ({
+        Artikelnummer: p.artikelnummer,
+        Name: p.artikelname,
+        menge: Number(p.menge),
+        Preis: Number(p.preis)
+      }));
+      updateWarenkorb();
+      aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
+      sperrhinweis.textContent = aktuellerKunde.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
+    };
+
+    const löschen = document.createElement("button");
+    löschen.textContent = "🗑️ Löschen";
+    löschen.className = "red";
+    löschen.style.marginLeft = "0.5rem";
+    löschen.onclick = () => {
       if (confirm("Bestellung wirklich löschen?")) {
         bestellungen.splice(i, 1);
         localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
         zeigeGespeicherteBestellungen();
       }
     };
-    wrap.appendChild(del);
+
+    wrap.appendChild(reaktivieren);
+    wrap.appendChild(löschen);
     listDiv.appendChild(wrap);
   });
 }
