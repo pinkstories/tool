@@ -78,15 +78,22 @@ function neukundeSpeichern() {
   }
 
   const k = {
-    name: firma,ort,vorname, nachname, strasse, plz, land, ustid, telefon, email
+    name: firma,
+    vorname,
+    nachname,
+    strasse,
+    plz,
+    ort,
+    land,
+    ustid,
+    telefon,
+    email
   };
   kunden.push(k);
   aktuellerKunde = k;
   aktuellerKundeAnzeige.textContent = `Neukunde: ${firma} (${ort})`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
-});
-
 }
 
 // Warenkorb aktualisieren
@@ -197,7 +204,15 @@ function abschliessen() {
 
   const daten = warenkorb.map(item => ({
     kundenname: aktuellerKunde.name,
-    ort: aktuellerKunde.ort,
+    vorname: aktuellerKunde.vorname || '',
+    nachname: aktuellerKunde.nachname || '',
+    strasse: aktuellerKunde.strasse || '',
+    plz: aktuellerKunde.plz || '',
+    ort: aktuellerKunde.ort || '',
+    land: aktuellerKunde.land || '',
+    ustid: aktuellerKunde.ustid || '',
+    telefon: aktuellerKunde.telefon || '',
+    email: aktuellerKunde.email || '',
     artikelnummer: item.Artikelnummer || item.artikelnummer,
     artikelname: item.Name || item.name,
     menge: item.menge,
@@ -238,16 +253,18 @@ function exportiereBestellungen() {
     alert("Keine gespeicherten Bestellungen zum Exportieren.");
     return;
   }
+
   const rows = bestellungen.map(obj => [
     obj.kundenname,
-    obj.vorname
-    obj.nachname
-    obj.strasse
-    obj.plz
-    obj.land
-    obj.ustid
-    obj.telefon
-    obj.email
+    obj.vorname,
+    obj.nachname,
+    obj.strasse,
+    obj.plz,
+    obj.ort,
+    obj.land,
+    obj.ustid,
+    obj.telefon,
+    obj.email,
     obj.artikelnummer,
     obj.artikelname,
     obj.menge,
@@ -256,13 +273,16 @@ function exportiereBestellungen() {
     obj.lieferdatum,
     obj.kommentar
   ]);
+
   const header = [
-    "Kunde","Vorname","Nachname","Strasse","PLZ","Ort","Land","Ustid","Telefon","email","Artikelnummer","Artikelbezeichnung","Menge",
-    "Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"
+    "Kunde", "Vorname", "Nachname", "Strasse", "PLZ", "Ort", "Land", "Ustid", "Telefon", "E-Mail",
+    "Artikelnummer", "Artikelbezeichnung", "Menge", "Einzelpreis netto", "Gesamtpreis netto", "Lieferdatum", "Kommentar"
   ];
+
   const csv = [header, ...rows].map(row =>
     row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(";")
   ).join("\n");
+
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
