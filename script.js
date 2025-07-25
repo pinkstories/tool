@@ -130,18 +130,39 @@ function mengeAnpassen(index, richtung) {
 
 // Artikelsuche
 scanInput.addEventListener('input', () => {
-  const query = scanInput.value.trim().toLowerCase();
+  const query = scanInput.value.trim();
   artikelSuchErgebnisse.innerHTML = '';
   if (!query) return;
 
   const treffer = ArtikelData.filter(a =>
-    (a.Name && a.Name.toLowerCase().includes(query)) ||
-    (a.Artikelnummer && String(a.Artikelnummer).toLowerCase().includes(query))
+    (a.Artikelnummer && String(a.Artikelnummer) === query)
   );
 
-  if (treffer.length === 1 && String(treffer[0].Artikelnummer) === query) return;
+  // Wenn genau ein Artikel exakt zur 4-stelligen Eingabe passt → automatisch übernehmen
+  if (query.length === 4 && treffer.length === 1) {
+    const artikel = treffer[0];
+    const vielfaches = artikel.Einheit || artikel.einheit || 1;
+    const vorhanden = warenkorb.find(w =>
+      String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
+    );
+    if (vorhanden) {
+      vorhanden.menge += vielfaches;
+    } else {
+      warenkorb.push({ ...artikel, menge: vielfaches });
+    }
+    updateWarenkorb();
+    scanInput.value = '';
+    scanInput.focus();
+    return;
+  }
 
-  treffer.slice(0, 30).forEach(artikel => {
+  // Wenn kein exakter Code: normale Vorschlagsliste anzeigen
+  const unscharfeTreffer = ArtikelData.filter(a =>
+    (a.Name && a.Name.toLowerCase().includes(query.toLowerCase())) ||
+    (a.Artikelnummer && String(a.Artikelnummer).toLowerCase().includes(query.toLowerCase()))
+  );
+
+  unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
     li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
     li.style.cursor = 'pointer';
@@ -163,6 +184,7 @@ scanInput.addEventListener('input', () => {
     artikelSuchErgebnisse.appendChild(li);
   });
 });
+
 
 // ENTER für Artikelfeld
 scanInput.addEventListener('keydown', (e) => {
