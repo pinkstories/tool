@@ -1,4 +1,5 @@
-let kunden = [...kundenData]; // aus KundenData.js
+// Kunden- und Artikel-Daten
+let kunden = [...kundenData];
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
@@ -14,19 +15,20 @@ const landDropdown = document.getElementById('land');
 const scanInput = document.getElementById('scanInput');
 const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
-// USt-ID-Feld nur bei EU-Ausland anzeigen
 landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
 });
 
-// Kundensuche
 kundeSuche.addEventListener('input', () => {
   const query = kundeSuche.value.toLowerCase().trim();
   suchErgebnisse.innerHTML = '';
   if (query.length === 0) return;
 
   const treffer = kunden.filter(k =>
-    k.name.toLowerCase().includes(query) || (k.ort && k.ort.toLowerCase().includes(query))
+    (k.name && k.name.toLowerCase().includes(query)) ||
+    (k.vorname && k.vorname.toLowerCase().includes(query)) ||
+    (k.nachname && k.nachname.toLowerCase().includes(query)) ||
+    (k.ort && k.ort.toLowerCase().includes(query))
   );
 
   if (treffer.length === 0) {
@@ -55,48 +57,30 @@ kundeSuche.addEventListener('input', () => {
   });
 });
 
-// Neukunde speichern
 function neukundeSpeichern() {
-  const firma = document.getElementById('firma').value.trim();
-  const vorname = document.getElementById('vorname').value.trim();
-  const nachname = document.getElementById('nachname').value.trim();
-  const strasse = document.getElementById('strasse').value.trim();
-  const plz = document.getElementById('plz').value.trim();
-  const ort = document.getElementById('ort').value.trim();
-  const land = document.getElementById('land').value.trim();
-  const ustid = document.getElementById('ustid').value.trim();
-  const telefon = document.getElementById('telefon').value.trim();
-  const email = document.getElementById('email').value.trim();
-
-  if (!firma || !vorname || !nachname || !strasse || !plz || !ort || !telefon || !email) {
+  const k = {
+    name: document.getElementById('firma').value.trim(),
+    vorname: document.getElementById('vorname').value.trim(),
+    nachname: document.getElementById('nachname').value.trim(),
+    strasse: document.getElementById('strasse').value.trim(),
+    plz: document.getElementById('plz').value.trim(),
+    ort: document.getElementById('ort').value.trim(),
+    land: document.getElementById('land').value.trim(),
+    ustid: document.getElementById('ustid').value.trim(),
+    telefon: document.getElementById('telefon').value.trim(),
+    email: document.getElementById('email').value.trim()
+  };
+  if (!k.name || !k.vorname || !k.nachname || !k.strasse || !k.plz || !k.ort || !k.telefon || !k.email || (k.land !== "Deutschland" && k.ustid === '')) {
     alert('Bitte alle Pflichtfelder ausfüllen.');
     return;
   }
-  if (land !== "Deutschland" && ustidFeld.style.display === "block" && ustid === "") {
-    alert('Bitte USt-IdNr. eingeben.');
-    return;
-  }
-
-  const k = {
-    name: firma,
-    vorname,
-    nachname,
-    strasse,
-    plz,
-    ort,
-    land,
-    ustid,
-    telefon,
-    email
-  };
   kunden.push(k);
   aktuellerKunde = k;
-  aktuellerKundeAnzeige.textContent = `Neukunde: ${firma} (${ort})`;
+  aktuellerKundeAnzeige.textContent = `Neukunde: ${k.name} (${k.ort})`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
 }
 
-// Warenkorb aktualisieren
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -117,7 +101,6 @@ function updateWarenkorb() {
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
-// Menge anpassen
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
@@ -128,17 +111,15 @@ function mengeAnpassen(index, richtung) {
   updateWarenkorb();
 }
 
-// Artikelsuche
 scanInput.addEventListener('input', () => {
   const query = scanInput.value.trim();
   artikelSuchErgebnisse.innerHTML = '';
   if (!query) return;
 
   const treffer = ArtikelData.filter(a =>
-    (a.Artikelnummer && String(a.Artikelnummer) === query)
+    String(a.Artikelnummer || '').toLowerCase() === query.toLowerCase()
   );
 
-  // Wenn genau ein Artikel exakt zur 4-stelligen Eingabe passt → automatisch übernehmen
   if (query.length === 4 && treffer.length === 1) {
     const artikel = treffer[0];
     const vielfaches = artikel.Einheit || artikel.einheit || 1;
@@ -156,7 +137,6 @@ scanInput.addEventListener('input', () => {
     return;
   }
 
-  // Wenn kein exakter Code: normale Vorschlagsliste anzeigen
   const unscharfeTreffer = ArtikelData.filter(a =>
     (a.Name && a.Name.toLowerCase().includes(query.toLowerCase())) ||
     (a.Artikelnummer && String(a.Artikelnummer).toLowerCase().includes(query.toLowerCase()))
@@ -165,7 +145,6 @@ scanInput.addEventListener('input', () => {
   unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
     li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
-    li.style.cursor = 'pointer';
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhanden = warenkorb.find(w =>
@@ -185,19 +164,13 @@ scanInput.addEventListener('input', () => {
   });
 });
 
-
-// ENTER für Artikelfeld
 scanInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     const eingabe = scanInput.value.trim();
-    const artikel = ArtikelData.find(a =>
-      String(a.Artikelnummer) === eingabe
-    );
+    const artikel = ArtikelData.find(a => String(a.Artikelnummer) === eingabe);
     if (artikel) {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
-      const vorhanden = warenkorb.find(w =>
-        String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
-      );
+      const vorhanden = warenkorb.find(w => String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer));
       if (vorhanden) {
         vorhanden.menge += vielfaches;
       } else {
@@ -206,26 +179,18 @@ scanInput.addEventListener('keydown', (e) => {
       updateWarenkorb();
       scanInput.value = '';
       artikelSuchErgebnisse.innerHTML = '';
-    } else if (artikelSuchErgebnisse.children.length > 0) {
-      artikelSuchErgebnisse.firstChild.click();
-    } else {
-      alert('Artikel nicht gefunden.');
     }
   }
 });
 
-// Bestellung speichern
 function abschliessen() {
-  if (!aktuellerKunde) {
-    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
-    return;
-  }
+  if (!aktuellerKunde) return alert('Bitte Kunde wählen!');
 
   const lieferdatum = document.getElementById('lieferdatum').value;
   const kommentar = document.getElementById('kommentar').value;
 
   const neueBestellung = {
-    kunde: aktuellerKunde,
+    kunde: { ...aktuellerKunde },
     lieferdatum,
     kommentar,
     zeitstempel: new Date().toISOString(),
@@ -241,172 +206,38 @@ function abschliessen() {
   bestellungen.push(neueBestellung);
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
 
-  alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
-
-  // Formular zurücksetzen
   document.getElementById('lieferdatum').value = '';
   document.getElementById('kommentar').value = '';
-  kundeSuche.value = '';
   aktuellerKundeAnzeige.textContent = '';
-  sperrhinweis.textContent = '';
   aktuellerKunde = null;
-
-  // Neukundenformular zurücksetzen
-  ['firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('land').value = 'Deutschland';
-  document.getElementById('neukundeFormular').style.display = 'none';
-  document.getElementById('ustid').style.display = 'none';
 }
 
-  // Formular zurücksetzen
-  document.getElementById('lieferdatum').value = '';
-  document.getElementById('kommentar').value = '';
-  kundeSuche.value = '';
-  aktuellerKundeAnzeige.textContent = '';
-  sperrhinweis.textContent = '';
-  aktuellerKunde = null;
-
-  // Neukundenformular zurücksetzen
-  ['firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('land').value = 'Deutschland';
-  document.getElementById('neukundeFormular').style.display = 'none';
-  document.getElementById('ustid').style.display = 'none';
-}
-
-// Export als CSV
 function exportiereBestellungen() {
-  if (bestellungen.length === 0) {
-    alert("Keine gespeicherten Bestellungen zum Exportieren.");
-    return;
-  }
+  if (bestellungen.length === 0) return alert("Keine Bestellungen vorhanden.");
 
-  const rows = bestellungen.map(obj => [
-    obj.kundenname,
-    obj.vorname,
-    obj.nachname,
-    obj.strasse,
-    obj.plz,
-    obj.ort,
-    obj.land,
-    obj.ustid,
-    obj.telefon,
-    obj.email,
-    obj.artikelnummer,
-    obj.artikelname,
-    obj.menge,
-    obj.preis,
-    obj.gesamtpreis,
-    obj.lieferdatum,
-    obj.kommentar
-  ]);
+  const header = ["Kunde", "Vorname", "Nachname", "Strasse", "PLZ", "Ort", "Land", "Ustid", "Telefon", "E-Mail", "Artikelnummer", "Artikelbezeichnung", "Menge", "Einzelpreis netto", "Gesamtpreis netto", "Lieferdatum", "Kommentar"];
 
-  const header = [
-    "Kunde", "Vorname", "Nachname", "Strasse", "PLZ", "Ort", "Land", "Ustid", "Telefon", "E-Mail",
-    "Artikelnummer", "Artikelbezeichnung", "Menge", "Einzelpreis netto", "Gesamtpreis netto", "Lieferdatum", "Kommentar"
-  ];
+  const rows = [];
 
-  const csv = [header, ...rows].map(row =>
-    row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(";")
-  ).join("\n");
+  bestellungen.forEach(b => {
+    const k = b.kunde;
+    b.positionen.forEach(p => {
+      rows.push([
+        k.name || '', k.vorname || '', k.nachname || '', k.strasse || '', k.plz || '', k.ort || '', k.land || '', k.ustid || '', k.telefon || '', k.email || '',
+        p.artikelnummer || '', p.artikelname || '', p.menge || '', p.preis || '', p.gesamtpreis || '',
+        b.lieferdatum || '', b.kommentar || ''
+      ]);
+    });
+  });
 
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const csv = [header, ...rows].map(r => r.map(f => `"${String(f).replace(/"/g, '""')}`.trim() + '"').join(';')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "weclapp_bestellungen.csv";
   a.click();
   URL.revokeObjectURL(url);
-}
-
-// Alle löschen
-function loescheAlleBestellungen() {
-  if (confirm("Alle gespeicherten Bestellungen unwiderruflich löschen?")) {
-    bestellungen = [];
-    localStorage.removeItem('bestellungen');
-    document.getElementById("gespeicherteListe").innerHTML = "";
-    gespeicherteSichtbar = false;
-    alert("Alle Bestellungen gelöscht!");
-  }
-}
-
-// Anzeige togglen
-function toggleGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  if (gespeicherteSichtbar) {
-    listDiv.innerHTML = "";
-    gespeicherteSichtbar = false;
-  } else {
-    zeigeGespeicherteBestellungen();
-    gespeicherteSichtbar = true;
-  }
-}
-
-// Gespeicherte anzeigen
-function zeigeGespeicherteBestellungen() {
-  const listDiv = document.getElementById("gespeicherteListe");
-  listDiv.innerHTML = "<h4>📁 Gespeicherte Bestellungen:</h4>";
-
-  if (bestellungen.length === 0) {
-    listDiv.innerHTML += "<p>Keine gespeicherten Bestellungen.</p>";
-    return;
-  }
-
-  bestellungen.forEach((bestellung, i) => {
-    const wrap = document.createElement("div");
-    wrap.style.margin = "0.5rem 0";
-    wrap.style.padding = "0.5rem";
-    wrap.style.border = "1px solid #ccc";
-    wrap.style.borderRadius = "6px";
-    wrap.style.background = "#f9f9f9";
-
-    wrap.innerHTML = `
-      <b>${bestellung.kunde.name}</b> (${bestellung.kunde.ort})<br>
-      <i>Lieferdatum:</i> ${bestellung.lieferdatum || "-"}<br>
-      <i>Kommentar:</i> ${bestellung.kommentar || "-"}<br>
-      <ul style="margin:0.5rem 0; padding-left:1.2rem;">
-        ${bestellung.positionen.map(p => `
-          <li>${p.artikelname} (${p.artikelnummer}) – ${p.menge} × ${p.preis} € = <b>${p.gesamtpreis} €</b></li>
-        `).join("")}
-      </ul>
-      <small style="color:#888;">${bestellung.zeitstempel}</small><br>
-    `;
-
-    const reaktivieren = document.createElement("button");
-    reaktivieren.textContent = "⏪ Reaktivieren";
-    reaktivieren.className = "blue";
-    reaktivieren.onclick = () => {
-      aktuellerKunde = bestellung.kunde;
-      warenkorb = bestellung.positionen.map(p => ({
-        Artikelnummer: p.artikelnummer,
-        Name: p.artikelname,
-        menge: Number(p.menge),
-        Preis: Number(p.preis)
-      }));
-      updateWarenkorb();
-      aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
-      sperrhinweis.textContent = aktuellerKunde.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
-    };
-
-    const löschen = document.createElement("button");
-    löschen.textContent = "🗑️ Löschen";
-    löschen.className = "red";
-    löschen.style.marginLeft = "0.5rem";
-    löschen.onclick = () => {
-      if (confirm("Bestellung wirklich löschen?")) {
-        bestellungen.splice(i, 1);
-        localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
-        zeigeGespeicherteBestellungen();
-      }
-    };
-
-    wrap.appendChild(reaktivieren);
-    wrap.appendChild(löschen);
-    listDiv.appendChild(wrap);
-  });
 }
