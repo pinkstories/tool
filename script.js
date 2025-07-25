@@ -78,35 +78,13 @@ function neukundeSpeichern() {
   }
 
   const k = {
-    name: firma,
-    ort,
-    gesperrt: false,
-    vorname, nachname, strasse, plz, land, ustid, telefon, email
+    name: firma,ort,vorname, nachname, strasse, plz, land, ustid, telefon, email
   };
   kunden.push(k);
   aktuellerKunde = k;
   aktuellerKundeAnzeige.textContent = `Neukunde: ${firma} (${ort})`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
-
-  // Google Sheets speichern
-fetch('https://script.google.com/macros/s/AKfycbxw6if67_TH0HCFhSS8nV7poYjJUvHf7Uo4JDOfXVnnDmCPVxzORwODg2LJTPxA4_6-/exec', {
-  method: 'POST',
-  body: JSON.stringify(k),
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-.then(res => res.json())
-.then(data => {
-  if (data.success) {
-    console.log("Kunde wurde in Google Sheets gespeichert.");
-  } else {
-    console.error("Fehler beim Speichern in Google Sheets.");
-  }
-})
-.catch(err => {
-  console.error("Fetch-Fehler:", err);
 });
 
 }
@@ -262,7 +240,14 @@ function exportiereBestellungen() {
   }
   const rows = bestellungen.map(obj => [
     obj.kundenname,
-    obj.ort,
+    obj.vorname
+    obj.nachname
+    obj.strasse
+    obj.plz
+    obj.land
+    obj.ustid
+    obj.telefon
+    obj.email
     obj.artikelnummer,
     obj.artikelname,
     obj.menge,
@@ -272,7 +257,7 @@ function exportiereBestellungen() {
     obj.kommentar
   ]);
   const header = [
-    "Kunde","Ort","Artikelnummer","Artikelbezeichnung","Menge",
+    "Kunde","Vorname","Nachname","Strasse","PLZ","Ort","Land","Ustid","Telefon","email","Artikelnummer","Artikelbezeichnung","Menge",
     "Einzelpreis netto","Gesamtpreis netto","Lieferdatum","Kommentar"
   ];
   const csv = [header, ...rows].map(row =>
