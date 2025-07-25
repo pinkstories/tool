@@ -184,13 +184,16 @@ scanInput.addEventListener('keydown', (e) => {
 });
 
 function abschliessen() {
-  if (!aktuellerKunde) return alert('Bitte Kunde wählen!');
+  if (!aktuellerKunde) {
+    alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
+    return;
+  }
 
   const lieferdatum = document.getElementById('lieferdatum').value;
   const kommentar = document.getElementById('kommentar').value;
 
   const neueBestellung = {
-    kunde: { ...aktuellerKunde },
+    kunde: { ...aktuellerKunde }, // wichtig: als Kopie!
     lieferdatum,
     kommentar,
     zeitstempel: new Date().toISOString(),
@@ -204,14 +207,24 @@ function abschliessen() {
   };
 
   bestellungen.push(neueBestellung);
-  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
+  localStorage.setItem('bestellungen', JSON.stringify(bestellungen)); // korrekt speichern
 
+  alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
-  document.getElementById('lieferdatum').value = '';
-  document.getElementById('kommentar').value = '';
+
+  // Reset UI
+  ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
   aktuellerKundeAnzeige.textContent = '';
+  sperrhinweis.textContent = '';
   aktuellerKunde = null;
+  document.getElementById('land').value = 'Deutschland';
+  document.getElementById('neukundeFormular').style.display = 'none';
+  document.getElementById('ustid').style.display = 'none';
 }
 
 function exportiereBestellungen() {
