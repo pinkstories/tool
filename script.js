@@ -5,6 +5,9 @@ let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
 let gespeicherteSichtbar = false;
 
+// NEU: Merke, ob eine Bestellung gerade bearbeitet wird
+let bearbeiteBestellungIndex = null;
+
 // DOM-Elemente
 const kundeSuche = document.getElementById('kundeSuche');
 const suchErgebnisse = document.getElementById('suchErgebnisse');
@@ -183,6 +186,34 @@ scanInput.addEventListener('keydown', (e) => {
   }
 });
 
+// HINZUGEFÜGT: Bestellung bearbeiten
+function bearbeiteBestellung(index) {
+  bearbeiteBestellungIndex = index; // Merken, dass diese Bestellung bearbeitet wird
+  const b = bestellungen[index];
+
+  // Kunde wiederherstellen
+  aktuellerKunde = b.kunde;
+  aktuellerKundeAnzeige.textContent = `Kunde: ${b.kunde.name} (${b.kunde.ort})`;
+  sperrhinweis.textContent = b.kunde.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
+
+  // Lieferdatum und Kommentar setzen
+  document.getElementById('lieferdatum').value = b.lieferdatum;
+  document.getElementById('kommentar').value = b.kommentar;
+
+  // Warenkorb aus Bestellung aufbauen
+  warenkorb = b.positionen.map(pos => ({
+    Artikelnummer: pos.artikelnummer,
+    Name: pos.artikelname,
+    menge: pos.menge,
+    Preis: Number(pos.preis)
+  }));
+  updateWarenkorb();
+
+  // Übersicht ausblenden (optional)
+  document.getElementById('gespeicherteListe').style.display = 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 function abschliessen() {
   if (!aktuellerKunde) {
     alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
@@ -193,7 +224,7 @@ function abschliessen() {
   const kommentar = document.getElementById('kommentar').value;
 
   const neueBestellung = {
-    kunde: { ...aktuellerKunde }, // wichtig: als Kopie!
+    kunde: { ...aktuellerKunde },
     lieferdatum,
     kommentar,
     zeitstempel: new Date().toISOString(),
@@ -206,14 +237,20 @@ function abschliessen() {
     }))
   };
 
-  bestellungen.push(neueBestellung);
-  localStorage.setItem('bestellungen', JSON.stringify(bestellungen)); // korrekt speichern
+  // HINZUGEFÜGT: Überschreiben oder neue Bestellung
+  if (bearbeiteBestellungIndex !== null) {
+    bestellungen[bearbeiteBestellungIndex] = neueBestellung;
+    bearbeiteBestellungIndex = null;
+  } else {
+    bestellungen.push(neueBestellung);
+  }
+
+  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
 
   alert('Bestellung gespeichert!');
   warenkorb = [];
   updateWarenkorb();
 
-  // Reset UI
   ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -225,6 +262,8 @@ function abschliessen() {
   document.getElementById('land').value = 'Deutschland';
   document.getElementById('neukundeFormular').style.display = 'none';
   document.getElementById('ustid').style.display = 'none';
+
+  zeigeGespeicherteBestellungen();
 }
 
 function exportiereBestellungen() {
@@ -254,6 +293,7 @@ function exportiereBestellungen() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   if (container.style.display === 'block') {
@@ -265,6 +305,7 @@ function toggleGespeicherteBestellungen() {
   }
 }
 
+// HINZUGEFÜGT: Bearbeiten-Button pro Bestellung
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -285,17 +326,19 @@ function zeigeGespeicherteBestellungen() {
       <ul>
         ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname} – ${p.gesamtpreis} €</li>`).join('')}
       </ul>
+      <button onclick="bearbeiteBestellung(${index})">✏️ Bearbeiten</button>
       <hr>
     `;
     container.appendChild(div);
   });
 }
+
 function loescheAlleBestellungen() {
   if (confirm("Willst du wirklich alle Bestellungen unwiderruflich löschen?")) {
     localStorage.removeItem('bestellungen');
     bestellungen = [];
-    zeigeGespeicherteBestellungen(); // Aktualisiere die Anzeige
-    updateWarenkorb(); // Leert ggf. auch den Warenkorb
+    zeigeGespeicherteBestellungen();
+    updateWarenkorb();
     alert("Alle Bestellungen wurden gelöscht!");
   }
 }
