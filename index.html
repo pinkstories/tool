@@ -1,107 +1,73 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Bestellungen</title>
+  <meta charset="utf-8"/>
+  <title>Messe Tool – Komplett</title>
   <style>
-    .bestellung {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      background-color: #f9f9f9;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      cursor: pointer;
-      margin: 8px 0;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
+    body { font-family: sans-serif; background: #f3f3f3; padding: 2rem; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; }
+    input, select, textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; }
+    ul { list-style: none; padding: 0; }
+    button { padding: 0.5rem 1rem; margin: 0.25rem; }
+    .red { background-color: #cc0000; color: white; }
+    .green { background-color: #009900; color: white; }
   </style>
 </head>
 <body>
-
-  <h2>📦 Bestellungen speichern</h2>
-
-  <button onclick="abschliessen()">💾 Bestellung speichern</button>
-  <button onclick="toggleGespeicherteBestellungen()">📂 Gespeicherte Bestellungen ein-/ausblenden</button>
-
-  <div id="gespeicherteBestellungen" style="display: none;"></div>
-
-  <script>
-    let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
-
-    function abschliessen() {
-      const dummyKunde = {
-        name: 'Beispiel GmbH',
-        ort: 'Berlin',
-        vorname: 'Max',
-        nachname: 'Mustermann',
-        strasse: 'Musterstraße 1',
-        plz: '12345',
-        land: 'Deutschland',
-        ustid: '',
-        telefon: '01234 567890',
-        email: 'max@example.com'
-      };
-
-      const bestellung = {
-        kunde: dummyKunde,
-        lieferdatum: new Date().toISOString().split('T')[0],
-        kommentar: 'Testbestellung',
-        zeitstempel: new Date().toISOString(),
-        positionen: [
-          { artikelnummer: '1234', artikelname: 'Produkt A', menge: 2, preis: '10.00', gesamtpreis: '20.00' },
-          { artikelnummer: '5678', artikelname: 'Produkt B', menge: 1, preis: '15.00', gesamtpreis: '15.00' }
-        ]
-      };
-
-      bestellungen.push(bestellung);
-      localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
-      alert('Bestellung gespeichert!');
-    }
-
-    function zeigeGespeicherteBestellungen() {
-      const container = document.getElementById('gespeicherteBestellungen');
-      container.innerHTML = '';
-
-      const gespeicherte = JSON.parse(localStorage.getItem('bestellungen') || '[]');
-
-      if (gespeicherte.length === 0) {
-        container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
-        return;
-      }
-
-      gespeicherte.forEach((b, index) => {
-        const div = document.createElement('div');
-        div.className = 'bestellung';
-        div.innerHTML = `
-          <h4>Bestellung #${index + 1}</h4>
-          <p><strong>Kunde:</strong> ${b.kunde.name} (${b.kunde.ort})</p>
-          <p><strong>Lieferdatum:</strong> ${b.lieferdatum}</p>
-          <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
-          <ul>
-            ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname} – ${p.gesamtpreis} €</li>`).join('')}
-          </ul>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function toggleGespeicherteBestellungen() {
-      const el = document.getElementById('gespeicherteBestellungen');
-      if (el.style.display === 'none' || el.innerHTML === '') {
-        zeigeGespeicherteBestellungen();
-        el.style.display = 'block';
-      } else {
-        el.style.display = 'none';
-      }
-    }
-  </script>
+<div id="kundenwarnung"></div>
+<div class="container" style="text-align: left; margin-top: 20px;">
+<h1>Messe-Bestelltool</h1>
+<div style="display:flex; gap:0.5rem; align-items:center;">
+  <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
+  <button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+</div>
+<ul id="suchErgebnisse"></ul>
+<div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
+  <h3>Neukunde anlegen</h3>
+  <input id="firma" placeholder="* Firmenname"/>
+  <input id="vorname" placeholder="* Vorname"/>
+  <input id="nachname" placeholder="* Nachname"/>
+  <input id="strasse" placeholder="* Straße"/>
+  <input id="plz" placeholder="* PLZ"/>
+  <input id="ort" placeholder="* Ort"/>
+  <select id="land">
+    <option selected value="Deutschland">Deutschland</option>
+    <option>Österreich</option>
+    <option>Frankreich</option>
+    <option>Italien</option>
+    <option>Niederlande</option>
+  </select>
+  <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
+  <input id="telefon" placeholder="* Telefon"/>
+  <input id="email" placeholder="* E-Mail"/>
+  <button onclick="neukundeSpeichern()">Neukunde speichern</button>
+</div>
+<div id="gespeicherteListe" style="margin-top: 10px;"></div>
+<p id="aktuellerKunde"></p>
+<p id="sperrhinweis" style="color:red; font-weight:bold;"></p>
+<input id="scanInput" placeholder="Scannen, Artikelnummer oder Name eingeben..."/>
+<ul id="artikelSuchErgebnisse"></ul>
+<ul id="warenkorbListe"></ul>
+<p id="gesamtpreis">Gesamt: 0,00 €</p>
+<label for="lieferdatum">Gewünschter Liefertermin:</label>
+<input id="lieferdatum" type="date"/>
+<label for="kommentar">Kommentare oder Wünsche:</label>
+<textarea id="kommentar"></textarea>
+<!-- BUTTONS BLOCK: nur EINMAL vorhanden -->
+<div id="speicherButtons" style="margin-top: 10px;">
+  <button onclick="abschliessen()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
+    💾 Bestellung speichern
+  </button>
+  <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
+    📂 Gespeicherte laden/ausblenden
+  </button>
+  <button onclick="exportiereBestellungen()">📤 Als Weclapp-CSV exportieren</button>
+  <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
+    🗑️ Alle Bestellungen löschen
+  </button>
+</div>
+<script src="KundenData.js"></script>
+<script src="ArtikelData.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
