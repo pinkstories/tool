@@ -254,3 +254,28 @@ function exportiereBestellungen() {
   a.click();
   URL.revokeObjectURL(url);
 }
+function zeigeGespeicherteBestellungen() {
+  const container = document.getElementById('gespeicherteBestellungen');
+  container.innerHTML = '';
+
+  if (bestellungen.length === 0) {
+    container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    return;
+  }
+
+  bestellungen.forEach((b, index) => {
+    const div = document.createElement('div');
+    div.className = 'bestellung';
+    div.innerHTML = `
+      <h4>Bestellung #${index + 1}</h4>
+      <p><strong>Kunde:</strong> ${b.kunde.name} (${b.kunde.ort})</p>
+      <p><strong>Lieferdatum:</strong> ${b.lieferdatum}</p>
+      <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
+      <ul>
+        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname} – ${p.gesamtpreis} €</li>`).join('')}
+      </ul>
+      <hr>
+    `;
+    container.appendChild(div);
+  });
+}
