@@ -256,14 +256,14 @@ function abschliessen() {
     if (el) el.value = '';
   });
 
-  aktuellerKundeAnzeige.textContent = '';
+    aktuellerKundeAnzeige.textContent = '';
   sperrhinweis.textContent = '';
   aktuellerKunde = null;
   document.getElementById('land').value = 'Deutschland';
   document.getElementById('neukundeFormular').style.display = 'none';
   document.getElementById('ustid').style.display = 'none';
 
-  zeigeGespeicherteBestellungen();
+  document.getElementById('gespeicherteListe').style.display = 'none'; // Übersicht ausblenden!
 }
 
 function exportiereBestellungen() {
