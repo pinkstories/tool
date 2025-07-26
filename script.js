@@ -254,8 +254,19 @@ function exportiereBestellungen() {
   a.click();
   URL.revokeObjectURL(url);
 }
+function toggleGespeicherteBestellungen() {
+  const container = document.getElementById('gespeicherteListe');
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    container.innerHTML = '';
+  } else {
+    container.style.display = 'block';
+    zeigeGespeicherteBestellungen();
+  }
+}
+
 function zeigeGespeicherteBestellungen() {
-  const container = document.getElementById('gespeicherteBestellungen');
+  const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
 
   if (bestellungen.length === 0) {
