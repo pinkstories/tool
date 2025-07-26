@@ -59,6 +59,21 @@ kundeSuche.addEventListener('input', () => {
     suchErgebnisse.appendChild(li);
   });
 });
+function updateBestellStatistik() {
+  const container = document.getElementById('bestellStatistik');
+  if (!container) return;
+
+  let anzahl = bestellungen.length;
+  let gesamt = 0;
+
+  bestellungen.forEach(b => {
+    b.positionen.forEach(p => {
+      gesamt += parseFloat(p.gesamtpreis || 0);
+    });
+  });
+
+  container.textContent = `Gesamte Bestellungen: ${anzahl} | Gesamtbetrag: ${gesamt.toFixed(2)} €`;
+}
 
 function neukundeSpeichern() {
   const k = {
@@ -264,6 +279,10 @@ function abschliessen() {
   document.getElementById('ustid').style.display = 'none';
 
   document.getElementById('gespeicherteListe').style.display = 'none'; // Übersicht ausblenden!
+    document.getElementById('gespeicherteListe').style.display = 'none';
+  updateBestellStatistik();
+}
+
 }
 
 function exportiereBestellungen() {
@@ -340,5 +359,9 @@ function loescheAlleBestellungen() {
     zeigeGespeicherteBestellungen();
     updateWarenkorb();
     alert("Alle Bestellungen wurden gelöscht!");
+    updateBestellStatistik();
+  }
+}
+
   }
 }
