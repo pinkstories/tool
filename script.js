@@ -363,5 +363,4 @@ function loescheAlleBestellungen() {
   }
 }
 
-  }
-}
+updateBestellStatistik();
