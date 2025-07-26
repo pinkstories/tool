@@ -290,3 +290,12 @@ function zeigeGespeicherteBestellungen() {
     container.appendChild(div);
   });
 }
+function loescheAlleBestellungen() {
+  if (confirm("Willst du wirklich alle Bestellungen unwiderruflich löschen?")) {
+    localStorage.removeItem('bestellungen');
+    bestellungen = [];
+    zeigeGespeicherteBestellungen(); // Aktualisiere die Anzeige
+    updateWarenkorb(); // Leert ggf. auch den Warenkorb
+    alert("Alle Bestellungen wurden gelöscht!");
+  }
+}
