@@ -283,8 +283,6 @@ function abschliessen() {
   updateBestellStatistik();
 }
 
-}
-
 function exportiereBestellungen() {
   if (bestellungen.length === 0) return alert("Keine Bestellungen vorhanden.");
 
