@@ -200,5 +200,5 @@ function loescheAlleBestellungen() {
 // Statistik beim Laden der Seite direkt anzeigen
 window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
-  zeigeGespeicherteBestellungen();
+  // zeigeGespeicherteBestellungen(); // <-- auskommentiert oder entfernt
 });
