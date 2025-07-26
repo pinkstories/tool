@@ -72,7 +72,7 @@ function updateBestellStatistik() {
     });
   });
 
-  container.textContent = `Gesamte Bestellungen: ${anzahl} | Gesamtbetrag: ${gesamt.toFixed(2)} €`;
+  container.textContent = `Meine Aufträge heute: ${anzahl} | Mein Umsatz heute: ${gesamt.toFixed(2)} €`;
 }
 
 function neukundeSpeichern() {
