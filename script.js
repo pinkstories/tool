@@ -1,6 +1,5 @@
 // Kunden- und Artikel-Daten
 let kunden = [...KundenData];
-let artikel = [...ArtikelData];
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
