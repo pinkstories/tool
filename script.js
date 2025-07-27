@@ -157,7 +157,7 @@ function manuellenArtikelHinzufuegen() {
     Name: name,
     Preis: preis,
     menge: 1,
-    Artikelnummer: 'MANUELL-' + Date.now()
+    // KEINE Artikelnummer vergeben!
   });
   document.getElementById('manuellerArtikelName').value = '';
   document.getElementById('manuellerArtikelPreis').value = '';
