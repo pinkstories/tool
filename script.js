@@ -16,7 +16,7 @@ const landDropdown = document.getElementById('land');
 const scanInput = document.getElementById('scanInput');
 const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
-// UStID-Feld anzeigen/verstecken je nach Land
+// Beim Wechsel des Landes das USt-Id Feld ein-/ausblenden
 landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
 });
@@ -60,7 +60,6 @@ kundeSuche.addEventListener('input', () => {
   });
 });
 
-// Statistik über Bestellungen
 function updateBestellStatistik() {
   const container = document.getElementById('bestellStatistik');
   if (!container) return;
@@ -79,7 +78,6 @@ function updateBestellStatistik() {
   container.textContent = `Aufträge: ${anzahl} | Umsatz: ${gesamt.toFixed(2)} €`;
 }
 
-// Neukunde speichern
 function neukundeSpeichern() {
   const k = {
     name: document.getElementById('firma').value.trim(),
@@ -104,7 +102,6 @@ function neukundeSpeichern() {
   document.getElementById('neukundeFormular').style.display = 'none';
 }
 
-// Bestellung speichern (neu oder überschreiben)
 function bestellungSpeichern() {
   if (!aktuellerKunde) {
     alert('Bitte zuerst einen Kunden auswählen.');
@@ -114,18 +111,12 @@ function bestellungSpeichern() {
     alert('Bitte mindestens ein Produkt in den Warenkorb legen.');
     return;
   }
-  // Zeitstempel erzeugen (nur bei neuen Bestellungen!)
-  let timestamp = Date.now();
-  if (bearbeiteBestellungIndex !== null && bestellungen[bearbeiteBestellungIndex] && bestellungen[bearbeiteBestellungIndex].timestamp) {
-    timestamp = bestellungen[bearbeiteBestellungIndex].timestamp;
-  }
-
   const bestellung = {
     kunde: aktuellerKunde,
     positionen: warenkorb.map(p => ({ ...p })),
     lieferdatum: document.getElementById('lieferdatum').value,
     kommentar: document.getElementById('kommentar').value,
-    timestamp // <- Zeitstempel speichern!
+    timestamp: Date.now() // Zeitstempel als Auftragsnummer
   };
 
   if (bearbeiteBestellungIndex !== null) {
@@ -156,7 +147,6 @@ function bestellungSpeichern() {
   alert('Bestellung gespeichert!');
 }
 
-// Warenkorb anzeigen/aktualisieren
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -177,7 +167,6 @@ function updateWarenkorb() {
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
-// Menge im Warenkorb anpassen
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
@@ -271,6 +260,7 @@ function toggleGespeicherteBestellungen() {
     zeigeGespeicherteBestellungen();
   }
 }
+
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -281,7 +271,6 @@ function zeigeGespeicherteBestellungen() {
   }
 
   bestellungen.forEach((b, index) => {
-    // Gesamtwert berechnen:
     let gesamtwert = 0;
     b.positionen.forEach(p => {
       const menge = Number(p.menge) || 0;
@@ -325,14 +314,14 @@ function loescheAlleBestellungen() {
   }
 }
 
-// --------- WECLAPP-EXPORT ----------
+// ========== WECLAPP CSV EXPORT ==========
 function exportiereWeclappCSV() {
   if (bestellungen.length === 0) {
     alert("Keine Bestellungen vorhanden!");
     return;
   }
 
-  // Spaltennamen aus der Vorlage, Reihenfolge exakt wie in deinem Screenshot:
+  // Die Spaltennamen exakt wie in deinem Import-Template (Tab als Trennzeichen)
   const header = [
     "AUFTRAGSNUMMER", "Auftragsdatum", "Geplantes Lieferdatum", "Währung", "Auftragsart",
     "Zahlungsbedingungen", "Versandart", "Lieferbedingungen", "Zahlungsart", "Handelssprache",
@@ -354,25 +343,23 @@ function exportiereWeclappCSV() {
   bestellungen.forEach((b) => {
     const auftragsnummer = b.timestamp || Date.now(); // Zeitstempel pro Bestellung
     const kunde = b.kunde || {};
-    const auftragsdatum = ""; // Kann leer bleiben oder heutiges Datum (optional)
-
+    const auftragsdatum = ""; // optional, sonst neues Date-Format
     b.positionen.forEach(p => {
-      // Pflichtfelder: AUFTRAGSNUMMER (0), Artikelnummer/EAN (10), Preis (13), Land (30)
       const row = [];
-      row[0]  = auftragsnummer;                // AUFTRAGSNUMMER
+      row[0]  = auftragsnummer;                // AUFTRAGSNUMMER (Zeitstempel)
       row[1]  = auftragsdatum;                 // Auftragsdatum (leer)
       row[2]  = b.lieferdatum || "";           // Geplantes Lieferdatum
-      row[3]  = "EUR";                         // Währung (Standard)
+      row[3]  = "EUR";                         // Währung
       row[4]  = "";                            // Auftragsart
       row[5]  = "";                            // Zahlungsbedingungen
       row[6]  = "";                            // Versandart
       row[7]  = "";                            // Lieferbedingungen
       row[8]  = "";                            // Zahlungsart
       row[9]  = "de";                          // Handelssprache
-      row[10] = p.Artikelnummer || p.artikelnummer || ""; // Artikelnummer oder EAN
+      row[10] = p.Artikelnummer || p.artikelnummer || ""; // Artikelnummer/EAN (Pflicht!)
       row[11] = p.Name || p.name || "";        // Artikelbeschreibung
       row[12] = p.menge || 1;                  // MENGE
-      row[13] = p.Preis ?? p.preis ?? "";      // PREIS
+      row[13] = p.Preis ?? p.preis ?? "";      // PREIS (Pflicht!)
       row[14] = "";                            // Steuersatz
       row[15] = "";                            // Rabatt (%)
       row[16] = b.kommentar || "";             // Notiz
@@ -393,3 +380,36 @@ function exportiereWeclappCSV() {
       row[31] = kunde.land || "";              // LAND (Pflicht!)
       row[32] = ""; // Abweichende Lieferadresse Firma
       row[33] = ""; // Abweichende Lieferadresse Firma-Zusatz
+      row[34] = ""; // Abweichende Lieferadresse Vorname
+      row[35] = ""; // Abweichende Lieferadresse Nachname
+      row[36] = ""; // Abweichende Lieferadresse Straße
+      row[37] = ""; // Abweichende Lieferadresse Postleitzahl
+      row[38] = ""; // Abweichende Lieferadresse Stadt
+      row[39] = ""; // Abweichende Lieferadresse Land
+      row[40] = ""; // Versandkostenartikel
+      row[41] = ""; // Positionstyp
+      row[42] = ""; // Geplante Arbeitszeit pro Einheit
+      row[43] = ""; // Manuelle Arbeitszeit pro Einheit
+      row[44] = ""; // Abrechnungsart
+
+      csvRows.push(row.map(x => typeof x === "string" && x.includes('\t') ? `"${x}"` : x).join('\t'));
+    });
+  });
+
+  // Export als Datei
+  const blob = new Blob([csvRows.join('\n')], { type: "text/csv" });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "Bestellungen-Weclapp-Import.csv";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 100);
+}
+
+// ========== /WECLAPP EXPORT ==========
+
+// Statistik beim Laden der Seite direkt anzeigen
+window.addEventListener('DOMContentLoaded', () => {
+  updateBestellStatistik();
+  zeigeGespeicherteBestellungen();
+});
