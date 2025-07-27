@@ -1,6 +1,3 @@
-<script src="KundenData.js"></script>
-<script src="ArtikelData.js"></script>
-<script src="script.js"></script>
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -19,59 +16,60 @@
 <body>
 <div id="kundenwarnung"></div>
 <div class="container" style="text-align: left; margin-top: 20px;">
- <div id="bestellStatistik" style="margin-bottom: 10px; font-weight: bold; text-align: right;"></div>
- <img src="Logo.png" alt="Logo" width="200" height="auto" />
-<h1>Messe-Bestelltool</h1>
-<div style="display:flex; gap:0.5rem; align-items:center;">
-  <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
-  <button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+  <div id="bestellStatistik" style="margin-bottom: 10px; font-weight: bold; text-align: right;"></div>
+  <img src="Logo.png" alt="Logo" width="200" height="auto" />
+  <h1>Messe-Bestelltool</h1>
+  <div style="display:flex; gap:0.5rem; align-items:center;">
+    <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
+    <button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+  </div>
+  <ul id="suchErgebnisse"></ul>
+  <div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
+    <h3>Neukunde anlegen</h3>
+    <input id="firma" placeholder="* Firmenname"/>
+    <input id="vorname" placeholder="* Vorname"/>
+    <input id="nachname" placeholder="* Nachname"/>
+    <input id="strasse" placeholder="* Straße"/>
+    <input id="plz" placeholder="* PLZ"/>
+    <input id="ort" placeholder="* Ort"/>
+    <select id="land">
+      <option selected value="Deutschland">Deutschland</option>
+      <option>Österreich</option>
+      <option>Frankreich</option>
+      <option>Italien</option>
+      <option>Niederlande</option>
+    </select>
+    <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
+    <input id="telefon" placeholder="* Telefon"/>
+    <input id="email" placeholder="* E-Mail"/>
+    <button onclick="neukundeSpeichern()">Neukunde speichern</button>
+  </div>
+  <div id="gespeicherteListe" style="margin-top: 10px;"></div>
+  <p id="aktuellerKunde"></p>
+  <p id="sperrhinweis" style="color:red; font-weight:bold;"></p>
+  <input id="scanInput" placeholder="Scannen, Artikelnummer oder Name eingeben..."/>
+  <ul id="artikelSuchErgebnisse"></ul>
+  <ul id="warenkorbListe"></ul>
+  <p id="gesamtpreis">Gesamt: 0,00 €</p>
+  <label for="lieferdatum">Gewünschter Liefertermin:</label>
+  <input id="lieferdatum" type="date"/>
+  <label for="kommentar">Kommentare oder Wünsche:</label>
+  <textarea id="kommentar"></textarea>
+  <!-- BUTTONS BLOCK: nur EINMAL vorhanden -->
+  <div id="speicherButtons" style="margin-top: 10px;">
+    <button onclick="bestellungSpeichern()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
+      💾 Bestellung speichern
+    </button>
+    <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
+      📂 Bestellungen anzeigen/ausblenden
+    </button>
+    <button onclick="exportiereBestellungen()">📤 Als csv exportieren</button>
+    <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
+      🗑️ Alle Bestellungen löschen
+    </button>
+  </div>
 </div>
- <div id="bestellStatistik" style="margin-bottom: 10px; font-weight: bold; text-align: right;">
- </div><ul id="suchErgebnisse"></ul>
-<div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
-  <h3>Neukunde anlegen</h3>
-  <input id="firma" placeholder="* Firmenname"/>
-  <input id="vorname" placeholder="* Vorname"/>
-  <input id="nachname" placeholder="* Nachname"/>
-  <input id="strasse" placeholder="* Straße"/>
-  <input id="plz" placeholder="* PLZ"/>
-  <input id="ort" placeholder="* Ort"/>
-  <select id="land">
-    <option selected value="Deutschland">Deutschland</option>
-    <option>Österreich</option>
-    <option>Frankreich</option>
-    <option>Italien</option>
-    <option>Niederlande</option>
-  </select>
-  <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
-  <input id="telefon" placeholder="* Telefon"/>
-  <input id="email" placeholder="* E-Mail"/>
-  <button onclick="neukundeSpeichern()">Neukunde speichern</button>
-</div>
-<div id="gespeicherteListe" style="margin-top: 10px;"></div>
-<p id="aktuellerKunde"></p>
-<p id="sperrhinweis" style="color:red; font-weight:bold;"></p>
-<input id="scanInput" placeholder="Scannen, Artikelnummer oder Name eingeben..."/>
-<ul id="artikelSuchErgebnisse"></ul>
-<ul id="warenkorbListe"></ul>
-<p id="gesamtpreis">Gesamt: 0,00 €</p>
-<label for="lieferdatum">Gewünschter Liefertermin:</label>
-<input id="lieferdatum" type="date"/>
-<label for="kommentar">Kommentare oder Wünsche:</label>
-<textarea id="kommentar"></textarea>
-<!-- BUTTONS BLOCK: nur EINMAL vorhanden -->
-<div id="speicherButtons" style="margin-top: 10px;">
-  <button onclick="abschliessen()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
-    💾 Bestellung speichern
-  </button>
-  <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
-    📂 Bestellungen anzeigen/ausblenden
-  </button>
-  <button onclick="exportiereBestellungen()">📤 Als csv exportieren</button>
-  <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
-    🗑️ Alle Bestellungen löschen
-  </button>
-</div>
+<!-- Scripte am ENDE! -->
 <script src="KundenData.js"></script>
 <script src="ArtikelData.js"></script>
 <script src="script.js"></script>
