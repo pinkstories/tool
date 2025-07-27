@@ -74,7 +74,7 @@ function updateBestellStatistik() {
     });
   });
 
-  container.textContent = `Meine Aufträge heute: ${anzahl} | Mein Umsatz heute: ${gesamt.toFixed(2)} €`;
+  container.textContent = `Aufträge: ${anzahl} | Umsatz: ${gesamt.toFixed(2)} €`;
 }
 
 function neukundeSpeichern() {
