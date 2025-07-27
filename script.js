@@ -5,9 +5,7 @@ let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
 let gespeicherteSichtbar = false;
-
-// NEU: Merke, ob eine Bestellung gerade bearbeitet wird
-let bearbeiteBestellungIndex = null;
+let bearbeiteBestellungIndex = null; // merken, ob gerade eine Bestellung bearbeitet wird
 
 // DOM-Elemente
 const kundeSuche = document.getElementById('kundeSuche');
@@ -19,11 +17,12 @@ const landDropdown = document.getElementById('land');
 const scanInput = document.getElementById('scanInput');
 const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
-// Beim Wechsel des Landes das USt-Id Feld ein-/ausblenden
+// UStID-Feld anzeigen/verstecken je nach Land
 landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
 });
 
+// Kundensuche
 kundeSuche.addEventListener('input', () => {
   const query = kundeSuche.value.toLowerCase().trim();
   suchErgebnisse.innerHTML = '';
@@ -62,6 +61,7 @@ kundeSuche.addEventListener('input', () => {
   });
 });
 
+// Statistik über Bestellungen
 function updateBestellStatistik() {
   const container = document.getElementById('bestellStatistik');
   if (!container) return;
@@ -71,13 +71,14 @@ function updateBestellStatistik() {
 
   bestellungen.forEach(b => {
     b.positionen.forEach(p => {
-      gesamt += parseFloat(p.gesamtpreis || 0);
+      gesamt += parseFloat(p.gesamtpreis || (p.menge * (p.Preis ?? p.preis) || 0));
     });
   });
 
   container.textContent = `Meine Aufträge heute: ${anzahl} | Mein Umsatz heute: ${gesamt.toFixed(2)} €`;
 }
 
+// Neukunde speichern
 function neukundeSpeichern() {
   const k = {
     name: document.getElementById('firma').value.trim(),
@@ -102,6 +103,7 @@ function neukundeSpeichern() {
   document.getElementById('neukundeFormular').style.display = 'none';
 }
 
+// Bestellung speichern (neu oder überschreiben)
 function bestellungSpeichern() {
   if (!aktuellerKunde) {
     alert('Bitte zuerst einen Kunden auswählen.');
@@ -113,7 +115,11 @@ function bestellungSpeichern() {
   }
   const bestellung = {
     kunde: aktuellerKunde,
-    positionen: warenkorb.map(p => ({ ...p })),
+    positionen: warenkorb.map(p => ({
+      ...p,
+      gesamtpreis: (p.menge * (p.Preis ?? p.preis)).toFixed(2),
+      artikelname: p.Name || p.name // falls gebraucht
+    })),
     lieferdatum: document.getElementById('lieferdatum').value,
     kommentar: document.getElementById('kommentar').value
   };
@@ -128,12 +134,27 @@ function bestellungSpeichern() {
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
   warenkorb = [];
   updateWarenkorb();
-  zeigeGespeicherteBestellungen();
-  updateBestellStatistik(); // <-- Statistik nach dem Speichern aktualisieren
+
+  // Formular zurücksetzen
+  ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  aktuellerKunde = null;
+  aktuellerKundeAnzeige.textContent = '';
+  sperrhinweis.textContent = '';
+  document.getElementById('land').value = 'Deutschland';
+  document.getElementById('neukundeFormular').style.display = 'none';
+  document.getElementById('ustid').style.display = 'none';
+
+  document.getElementById('gespeicherteListe').style.display = 'none';
+
+  updateBestellStatistik(); // Statistik aktualisieren
 
   alert('Bestellung gespeichert!');
 }
 
+// Warenkorb anzeigen/aktualisieren
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -154,6 +175,7 @@ function updateWarenkorb() {
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
+// Menge im Warenkorb anpassen
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
@@ -164,6 +186,7 @@ function mengeAnpassen(index, richtung) {
   updateWarenkorb();
 }
 
+// Artikelsuche (Scan/Tippen)
 scanInput.addEventListener('input', () => {
   const query = scanInput.value.trim();
   artikelSuchErgebnisse.innerHTML = '';
@@ -236,7 +259,7 @@ scanInput.addEventListener('keydown', (e) => {
   }
 });
 
-
+// Übersicht an/aus
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   if (container.style.display === 'block') {
@@ -248,6 +271,7 @@ function toggleGespeicherteBestellungen() {
   }
 }
 
+// Bestellungen anzeigen mit Bearbeiten-Button
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -263,10 +287,10 @@ function zeigeGespeicherteBestellungen() {
     div.innerHTML = `
       <h4>Bestellung #${index + 1}</h4>
       <p><strong>Kunde:</strong> ${b.kunde.name} (${b.kunde.ort})</p>
-      <p><strong>Lieferdatum:</strong> ${b.lieferdatum}</p>
+      <p><strong>Lieferdatum:</strong> ${b.lieferdatum || '-'}</p>
       <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
       <ul>
-        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname} – ${p.gesamtpreis} €</li>`).join('')}
+        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname || p.Name || p.name} – ${p.gesamtpreis} €</li>`).join('')}
       </ul>
       <button onclick="bearbeiteBestellung(${index})">✏️ Bearbeiten</button>
       <hr>
@@ -275,17 +299,19 @@ function zeigeGespeicherteBestellungen() {
   });
 }
 
+// Bestellung zum Bearbeiten ins Formular holen
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
   warenkorb = bestellung.positionen.map(p => ({ ...p }));
-  document.getElementById('lieferdatum').value = bestellung.lieferdatum;
+  document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
   bearbeiteBestellungIndex = index;
   updateWarenkorb();
   aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
 }
 
+// Alle Bestellungen löschen
 function loescheAlleBestellungen() {
   if (confirm("Willst du wirklich alle Bestellungen unwiderruflich löschen?")) {
     localStorage.removeItem('bestellungen');
@@ -293,12 +319,11 @@ function loescheAlleBestellungen() {
     zeigeGespeicherteBestellungen();
     updateWarenkorb();
     alert("Alle Bestellungen wurden gelöscht!");
-    updateBestellStatistik(); // <-- Statistik nach dem Löschen aktualisieren
+    updateBestellStatistik();
   }
 }
 
-// Statistik beim Laden der Seite direkt anzeigen
+// Statistik beim Laden der Seite anzeigen
 window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
-  // zeigeGespeicherteBestellungen(); // <-- auskommentiert oder entfernt
 });
