@@ -331,95 +331,104 @@ function loescheAlleBestellungen() {
 }
 
 // ========== WECLAPP CSV EXPORT ==========
-function exportiereWeclappCSV() {
-  if (bestellungen.length === 0) {
+function formatWeclappDate(d) {
+  // d: Date-Objekt!
+  const pad = n => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear().toString().slice(-2)}/${pad(d.getHours())}/${pad(d.getSeconds())}`;
+}
+
+function exportiereBestellungenWeclapp() {
+  if (!Array.isArray(bestellungen) || bestellungen.length === 0) {
     alert("Keine Bestellungen vorhanden!");
     return;
   }
 
-  // Die Spaltennamen exakt wie in deinem Import-Template (Tab als Trennzeichen)
   const header = [
-    "AUFTRAGSNUMMER", "Auftragsdatum", "Geplantes Lieferdatum", "Währung", "Auftragsart",
-    "Zahlungsbedingungen", "Versandart", "Lieferbedingungen", "Zahlungsart", "Handelssprache",
-    "Artikelnummer oder EAN", "Artikelbeschreibung", "MENGE", "PREIS", "Steuersatz",
-    "Rabatt (%)", "Notiz", "KUNDENNUMMER", "Kunden Bestellnummer", "Vertriebsweg", "Kommission",
-    "Firma", "Firmenzusatz", "Anrede", "Vorname", "Nachname", "E-Mail", "Telefonnummer",
-    "Straße", "Stadt", "Postleitzahl", "LAND",
-    "Abweichende Lieferadresse Firma", "Abweichende Lieferadresse Firma-Zusatz",
-    "Abweichende Lieferadresse Vorname", "Abweichende Lieferadresse Nachname",
-    "Abweichende Lieferadresse Straße", "Abweichende Lieferadresse Postleitzahl",
-    "Abweichende Lieferadresse Stadt", "Abweichende Lieferadresse Land",
-    "Versandkostenartikel", "Positionstyp", "Geplante Arbeitszeit pro Einheit",
-    "Manuelle Arbeitszeit pro Einheit", "Abrechnungsart"
+    "AUFTRAGSNUMMER","Auftragsdatum","Geplantes Lieferdatum","Währung","Auftragsart","Zahlungsbedingungen","Versandart",
+    "Lieferbedingungen","Zahlungsart","Handelssprache","Artikelnummer oder EAN","Artikelbeschreibung","MENGE","PREIS","Steuersatz",
+    "Rabatt (%)","Notiz","KUNDENNUMMER","Kunden Bestellnummer","Vertriebsweg","Kommission","Firma","Firmenzusatz","Anrede","Vorname",
+    "Nachname","E-Mail","Telefonnummer","Straße","Stadt","Postleitzahl","LAND","Abweichende Lieferadresse Firma",
+    "Abweichende Lieferadresse Firma-Zusatz","Abweichende Lieferadresse Vorname","Abweichende Lieferadresse Nachname",
+    "Abweichende Lieferadresse Straße","Abweichende Lieferadresse Postleitzahl","Abweichende Lieferadresse Stadt",
+    "Abweichende Lieferadresse Land","Versandkostenartikel","Positionstyp","Geplante Arbeitszeit pro Einheit",
+    "Manuelle Arbeitszeit pro Einheit","Abrechnungsart"
   ];
 
-  let csvRows = [];
-  csvRows.push(header.join('\t')); // Tab als Trennzeichen
+  const rows = [];
 
-  bestellungen.forEach((b) => {
-    const auftragsnummer = b.timestamp || Date.now(); // Zeitstempel pro Bestellung
+  bestellungen.forEach(b => {
+    // Zeitstempel für AUFTRAGSNUMMER
+    let zeitObjekt;
+    if (b.zeitstempel) {
+      zeitObjekt = new Date(b.zeitstempel);
+    } else {
+      zeitObjekt = new Date();
+      b.zeitstempel = zeitObjekt; // Für künftige Exports merken
+    }
+    const auftragsnummer = formatWeclappDate(zeitObjekt);
+
     const kunde = b.kunde || {};
-    const auftragsdatum = ""; // optional, sonst neues Date-Format
     b.positionen.forEach(p => {
-      const row = [];
-      row[0]  = auftragsnummer;                // AUFTRAGSNUMMER (Zeitstempel)
-      row[1]  = auftragsdatum;                 // Auftragsdatum (leer)
-      row[2]  = b.lieferdatum || "";           // Geplantes Lieferdatum
-      row[3]  = "EUR";                         // Währung
-      row[4]  = "";                            // Auftragsart
-      row[5]  = "";                            // Zahlungsbedingungen
-      row[6]  = "";                            // Versandart
-      row[7]  = "";                            // Lieferbedingungen
-      row[8]  = "";                            // Zahlungsart
-      row[9]  = "de";                          // Handelssprache
-      row[10] = p.Artikelnummer || p.artikelnummer || ""; // Artikelnummer/EAN (Pflicht!)
-      row[11] = p.Name || p.name || "";        // Artikelbeschreibung
-      row[12] = p.menge || 1;                  // MENGE
-      row[13] = p.Preis ?? p.preis ?? "";      // PREIS (Pflicht!)
-      row[14] = "";                            // Steuersatz
-      row[15] = "";                            // Rabatt (%)
-      row[16] = b.kommentar || "";             // Notiz
-      row[17] = b.kunde.kundennummer || "";    // R: KUNDENNUMMER (wird aus KundenData übernommen, bei Neukunde leer)
-      row[18] = "";                            // Kunden Bestellnummer
-      row[19] = "";                            // Vertriebsweg
-      row[20] = "";                            // Kommission
-      row[21] = kunde.name || "";              // Firma
-      row[22] = "";                            // Firmenzusatz
-      row[23] = "";                            // Anrede
-      row[24] = kunde.vorname || "";           // Vorname
-      row[25] = kunde.nachname || "";          // Nachname
-      row[26] = kunde.email || "";             // E-Mail
-      row[27] = kunde.telefon || "";           // Telefonnummer
-      row[28] = kunde.strasse || "";           // Straße
-      row[29] = kunde.ort || "";               // Stadt
-      row[30] = kunde.plz || "";               // Postleitzahl
-      row[31] = kunde.land || "";              // LAND (Pflicht!)
-      row[32] = ""; // Abweichende Lieferadresse Firma
-      row[33] = ""; // Abweichende Lieferadresse Firma-Zusatz
-      row[34] = ""; // Abweichende Lieferadresse Vorname
-      row[35] = ""; // Abweichende Lieferadresse Nachname
-      row[36] = ""; // Abweichende Lieferadresse Straße
-      row[37] = ""; // Abweichende Lieferadresse Postleitzahl
-      row[38] = ""; // Abweichende Lieferadresse Stadt
-      row[39] = ""; // Abweichende Lieferadresse Land
-      row[40] = ""; // Versandkostenartikel
-      row[41] = ""; // Positionstyp
-      row[42] = ""; // Geplante Arbeitszeit pro Einheit
-      row[43] = ""; // Manuelle Arbeitszeit pro Einheit
-      row[44] = ""; // Abrechnungsart
-
-      csvRows.push(row.map(x => typeof x === "string" && x.includes('\t') ? `"${x}"` : x).join('\t'));
+      rows.push([
+        auftragsnummer, // AUFTRAGSNUMMER (A)
+        "", // Auftragsdatum
+        b.lieferdatum || "", // Geplantes Lieferdatum (C)
+        "", // Währung
+        "", // Auftragsart
+        "", // Zahlungsbedingungen
+        "", // Versandart
+        "", // Lieferbedingungen
+        "", // Zahlungsart
+        "", // Handelssprache
+        (p.Artikelnummer || p.artikelnummer || ""), // Artikelnummer/EAN (M) – leer bei manuell
+        p.Name || p.name || "", // Artikelbeschreibung
+        p.menge || "", // MENGE
+        p.Preis || p.preis || "", // PREIS (N)
+        "", // Steuersatz
+        "", // Rabatt
+        b.kommentar || "", // Notiz (Q)
+        (kunde.kundennummer || ""), // KUNDENNUMMER (R) – leer bei Neukunde
+        "", // Kunden Bestellnummer
+        "", // Vertriebsweg
+        "", // Kommission
+        kunde.name || "", // Firma
+        "", // Firmenzusatz
+        "", // Anrede
+        kunde.vorname || "",
+        kunde.nachname || "",
+        kunde.email || "",
+        kunde.telefon || "",
+        kunde.strasse || "",
+        kunde.ort || "",
+        kunde.plz || "",
+        kunde.land || "", // LAND (AF)
+        "", // Abw. Lief. Firma
+        "", // Abw. Lief. Firma-Zusatz
+        "", // Abw. Lief. Vorname
+        "", // Abw. Lief. Nachname
+        "", // Abw. Lief. Straße
+        "", // Abw. Lief. PLZ
+        "", // Abw. Lief. Stadt
+        "", // Abw. Lief. Land
+        "", // Versandkostenartikel
+        "", // Positionstyp
+        "", // Geplante Arbeitszeit pro Einheit
+        "", // Manuelle Arbeitszeit pro Einheit
+        ""  // Abrechnungsart
+      ]);
     });
   });
 
-  // Export als Datei
-  const blob = new Blob([csvRows.join('\n')], { type: "text/csv" });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = "Bestellungen-Weclapp-Import.csv";
+  const csv = [header, ...rows].map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join('\t')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "weclapp_import.csv";
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => document.body.removeChild(a), 100);
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ========== /WECLAPP EXPORT ==========
