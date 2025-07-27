@@ -4,8 +4,6 @@ let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
 let gespeicherteSichtbar = false;
-
-// NEU: Merke, ob eine Bestellung gerade bearbeitet wird
 let bearbeiteBestellungIndex = null;
 
 // DOM-Elemente
@@ -18,7 +16,7 @@ const landDropdown = document.getElementById('land');
 const scanInput = document.getElementById('scanInput');
 const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
-// Beim Wechsel des Landes das USt-Id Feld ein-/ausblenden
+// UStID-Feld anzeigen/verstecken je nach Land
 landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
 });
@@ -62,6 +60,7 @@ kundeSuche.addEventListener('input', () => {
   });
 });
 
+// Statistik über Bestellungen
 function updateBestellStatistik() {
   const container = document.getElementById('bestellStatistik');
   if (!container) return;
@@ -71,7 +70,6 @@ function updateBestellStatistik() {
 
   bestellungen.forEach(b => {
     b.positionen.forEach(p => {
-      // Hole alle Eventualitäten ab!
       const menge = Number(p.menge) || 0;
       const preis = Number(p.Preis ?? p.preis) || 0;
       gesamt += menge * preis;
@@ -81,6 +79,7 @@ function updateBestellStatistik() {
   container.textContent = `Aufträge: ${anzahl} | Umsatz: ${gesamt.toFixed(2)} €`;
 }
 
+// Neukunde speichern
 function neukundeSpeichern() {
   const k = {
     name: document.getElementById('firma').value.trim(),
@@ -105,6 +104,7 @@ function neukundeSpeichern() {
   document.getElementById('neukundeFormular').style.display = 'none';
 }
 
+// Bestellung speichern (neu oder überschreiben)
 function bestellungSpeichern() {
   if (!aktuellerKunde) {
     alert('Bitte zuerst einen Kunden auswählen.');
@@ -114,11 +114,18 @@ function bestellungSpeichern() {
     alert('Bitte mindestens ein Produkt in den Warenkorb legen.');
     return;
   }
+  // Zeitstempel erzeugen (nur bei neuen Bestellungen!)
+  let timestamp = Date.now();
+  if (bearbeiteBestellungIndex !== null && bestellungen[bearbeiteBestellungIndex] && bestellungen[bearbeiteBestellungIndex].timestamp) {
+    timestamp = bestellungen[bearbeiteBestellungIndex].timestamp;
+  }
+
   const bestellung = {
     kunde: aktuellerKunde,
     positionen: warenkorb.map(p => ({ ...p })),
     lieferdatum: document.getElementById('lieferdatum').value,
-    kommentar: document.getElementById('kommentar').value
+    kommentar: document.getElementById('kommentar').value,
+    timestamp // <- Zeitstempel speichern!
   };
 
   if (bearbeiteBestellungIndex !== null) {
@@ -149,6 +156,7 @@ function bestellungSpeichern() {
   alert('Bestellung gespeichert!');
 }
 
+// Warenkorb anzeigen/aktualisieren
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -169,6 +177,7 @@ function updateWarenkorb() {
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
+// Menge im Warenkorb anpassen
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
@@ -180,7 +189,6 @@ function mengeAnpassen(index, richtung) {
 }
 
 // Artikelsuche (Scan/Tippen)
-// ACHTUNG: Wir benutzen hier ArtikelData (großes A)!
 scanInput.addEventListener('input', () => {
   const query = scanInput.value.trim();
   artikelSuchErgebnisse.innerHTML = '';
@@ -263,7 +271,6 @@ function toggleGespeicherteBestellungen() {
     zeigeGespeicherteBestellungen();
   }
 }
-
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -318,8 +325,71 @@ function loescheAlleBestellungen() {
   }
 }
 
-// Statistik beim Laden der Seite direkt anzeigen
-window.addEventListener('DOMContentLoaded', () => {
-  updateBestellStatistik();
-  zeigeGespeicherteBestellungen();
-});
+// --------- WECLAPP-EXPORT ----------
+function exportiereWeclappCSV() {
+  if (bestellungen.length === 0) {
+    alert("Keine Bestellungen vorhanden!");
+    return;
+  }
+
+  // Spaltennamen aus der Vorlage, Reihenfolge exakt wie in deinem Screenshot:
+  const header = [
+    "AUFTRAGSNUMMER", "Auftragsdatum", "Geplantes Lieferdatum", "Währung", "Auftragsart",
+    "Zahlungsbedingungen", "Versandart", "Lieferbedingungen", "Zahlungsart", "Handelssprache",
+    "Artikelnummer oder EAN", "Artikelbeschreibung", "MENGE", "PREIS", "Steuersatz",
+    "Rabatt (%)", "Notiz", "KUNDENNUMMER", "Kunden Bestellnummer", "Vertriebsweg", "Kommission",
+    "Firma", "Firmenzusatz", "Anrede", "Vorname", "Nachname", "E-Mail", "Telefonnummer",
+    "Straße", "Stadt", "Postleitzahl", "LAND",
+    "Abweichende Lieferadresse Firma", "Abweichende Lieferadresse Firma-Zusatz",
+    "Abweichende Lieferadresse Vorname", "Abweichende Lieferadresse Nachname",
+    "Abweichende Lieferadresse Straße", "Abweichende Lieferadresse Postleitzahl",
+    "Abweichende Lieferadresse Stadt", "Abweichende Lieferadresse Land",
+    "Versandkostenartikel", "Positionstyp", "Geplante Arbeitszeit pro Einheit",
+    "Manuelle Arbeitszeit pro Einheit", "Abrechnungsart"
+  ];
+
+  let csvRows = [];
+  csvRows.push(header.join('\t')); // Tab als Trennzeichen
+
+  bestellungen.forEach((b) => {
+    const auftragsnummer = b.timestamp || Date.now(); // Zeitstempel pro Bestellung
+    const kunde = b.kunde || {};
+    const auftragsdatum = ""; // Kann leer bleiben oder heutiges Datum (optional)
+
+    b.positionen.forEach(p => {
+      // Pflichtfelder: AUFTRAGSNUMMER (0), Artikelnummer/EAN (10), Preis (13), Land (30)
+      const row = [];
+      row[0]  = auftragsnummer;                // AUFTRAGSNUMMER
+      row[1]  = auftragsdatum;                 // Auftragsdatum (leer)
+      row[2]  = b.lieferdatum || "";           // Geplantes Lieferdatum
+      row[3]  = "EUR";                         // Währung (Standard)
+      row[4]  = "";                            // Auftragsart
+      row[5]  = "";                            // Zahlungsbedingungen
+      row[6]  = "";                            // Versandart
+      row[7]  = "";                            // Lieferbedingungen
+      row[8]  = "";                            // Zahlungsart
+      row[9]  = "de";                          // Handelssprache
+      row[10] = p.Artikelnummer || p.artikelnummer || ""; // Artikelnummer oder EAN
+      row[11] = p.Name || p.name || "";        // Artikelbeschreibung
+      row[12] = p.menge || 1;                  // MENGE
+      row[13] = p.Preis ?? p.preis ?? "";      // PREIS
+      row[14] = "";                            // Steuersatz
+      row[15] = "";                            // Rabatt (%)
+      row[16] = b.kommentar || "";             // Notiz
+      row[17] = "";                            // KUNDENNUMMER
+      row[18] = "";                            // Kunden Bestellnummer
+      row[19] = "";                            // Vertriebsweg
+      row[20] = "";                            // Kommission
+      row[21] = kunde.name || "";              // Firma
+      row[22] = "";                            // Firmenzusatz
+      row[23] = "";                            // Anrede
+      row[24] = kunde.vorname || "";           // Vorname
+      row[25] = kunde.nachname || "";          // Nachname
+      row[26] = kunde.email || "";             // E-Mail
+      row[27] = kunde.telefon || "";           // Telefonnummer
+      row[28] = kunde.strasse || "";           // Straße
+      row[29] = kunde.ort || "";               // Stadt
+      row[30] = kunde.plz || "";               // Postleitzahl
+      row[31] = kunde.land || "";              // LAND (Pflicht!)
+      row[32] = ""; // Abweichende Lieferadresse Firma
+      row[33] = ""; // Abweichende Lieferadresse Firma-Zusatz
