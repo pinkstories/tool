@@ -272,6 +272,30 @@ function zeigeGespeicherteBestellungen() {
     // Gesamtwert berechnen:
     let gesamtwert = 0;
     b.positionen.forEach(p => {
+      // Wichtig: Hole alle Eventualitäten ab!
+      const menge = Number(p.menge) || 0;
+      const preis = Number(p.Preis ?? p.preis) || 0;
+      // Der Fallback '||' ist sehr wichtig!
+      gesamtwert += menge * preis;
+    });
+
+    const div = document.createElement('div');
+    div.className = 'bestellung';
+    div.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
+        <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
+        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
+      </div>
+      <hr>
+    `;
+    container.appendChild(div);
+  });
+}
+  bestellungen.forEach((b, index) => {
+    // Gesamtwert berechnen:
+    let gesamtwert = 0;
+    b.positionen.forEach(p => {
       const menge = Number(p.menge) || 0;
       const preis = Number(p.Preis ?? p.preis) || 0;
       gesamtwert += Number(p.gesamtpreis) || (menge * preis);
