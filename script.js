@@ -146,7 +146,23 @@ function bestellungSpeichern() {
 
   alert('Bestellung gespeichert!');
 }
-
+function manuellenArtikelHinzufuegen() {
+  const name = document.getElementById('manuellerArtikelName').value.trim();
+  const preis = parseFloat(document.getElementById('manuellerArtikelPreis').value.replace(',', '.'));
+  if (!name || isNaN(preis) || preis <= 0) {
+    alert('Bitte gib einen Artikelnamen und einen gültigen Preis an!');
+    return;
+  }
+  warenkorb.push({
+    Name: name,
+    Preis: preis,
+    menge: 1,
+    Artikelnummer: 'MANUELL-' + Date.now()
+  });
+  document.getElementById('manuellerArtikelName').value = '';
+  document.getElementById('manuellerArtikelPreis').value = '';
+  updateWarenkorb();
+}
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
