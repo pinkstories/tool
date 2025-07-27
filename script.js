@@ -23,6 +23,7 @@ landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
 });
 
+// Kundensuche
 kundeSuche.addEventListener('input', () => {
   const query = kundeSuche.value.toLowerCase().trim();
   suchErgebnisse.innerHTML = '';
@@ -70,7 +71,10 @@ function updateBestellStatistik() {
 
   bestellungen.forEach(b => {
     b.positionen.forEach(p => {
-      gesamt += parseFloat(p.gesamtpreis || 0);
+      // Hole alle Eventualitäten ab!
+      const menge = Number(p.menge) || 0;
+      const preis = Number(p.Preis ?? p.preis) || 0;
+      gesamt += menge * preis;
     });
   });
 
@@ -259,6 +263,7 @@ function toggleGespeicherteBestellungen() {
     zeigeGespeicherteBestellungen();
   }
 }
+
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -272,10 +277,8 @@ function zeigeGespeicherteBestellungen() {
     // Gesamtwert berechnen:
     let gesamtwert = 0;
     b.positionen.forEach(p => {
-      // Wichtig: Hole alle Eventualitäten ab!
       const menge = Number(p.menge) || 0;
       const preis = Number(p.Preis ?? p.preis) || 0;
-      // Der Fallback '||' ist sehr wichtig!
       gesamtwert += menge * preis;
     });
 
@@ -292,27 +295,6 @@ function zeigeGespeicherteBestellungen() {
     container.appendChild(div);
   });
 }
-  bestellungen.forEach((b, index) => {
-    // Gesamtwert berechnen:
-    let gesamtwert = 0;
-    b.positionen.forEach(p => {
-      const menge = Number(p.menge) || 0;
-      const preis = Number(p.Preis ?? p.preis) || 0;
-      gesamtwert += Number(p.gesamtpreis) || (menge * preis);
-    });
-
-    const div = document.createElement('div');
-    div.className = 'bestellung';
-    div.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
-        <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
-        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
-      </div>
-      <hr>
-    `;
-    container.appendChild(div);
-  }
 
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
