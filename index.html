@@ -52,6 +52,11 @@
   <p id="aktuellerKunde"></p>
   <p id="sperrhinweis"></p>
   <input id="scanInput" placeholder="Scannen, Artikelnummer oder Name eingeben..."/>
+  <div id="manuellArtikelBox" style="margin-bottom:1rem;">
+  <input id="manuellerArtikelName" placeholder="Artikelbezeichnung (manuell)" style="width:45%;display:inline-block;">
+  <input id="manuellerArtikelPreis" placeholder="Preis (€)" type="number" step="0.01" min="0" style="width:25%;display:inline-block;">
+  <button onclick="manuellenArtikelHinzufuegen()" class="green" style="width:28%;display:inline-block;">+ Artikel hinzufügen</button>
+</div>
   <ul id="artikelSuchErgebnisse"></ul>
   <ul id="warenkorbListe"></ul>
   <p id="gesamtpreis">Gesamt: 0,00 €</p>
