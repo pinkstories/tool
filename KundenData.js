@@ -1,4 +1,4 @@
-const kundenData = [
+const KundenData = [
   {
     "name": "1609 Design",
     "strasse": "2 west Crescent ",
