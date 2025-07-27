@@ -259,7 +259,6 @@ function toggleGespeicherteBestellungen() {
     zeigeGespeicherteBestellungen();
   }
 }
-
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
@@ -270,16 +269,22 @@ function zeigeGespeicherteBestellungen() {
   }
 
   bestellungen.forEach((b, index) => {
+    // Gesamtwert dieser Bestellung berechnen:
+    let gesamtwert = 0;
+    b.positionen.forEach(p => {
+      const menge = Number(p.menge) || 0;
+      const preis = Number(p.Preis ?? p.preis) || 0;
+      gesamtwert += Number(p.gesamtpreis) || (menge * preis);
+    });
+
     const div = document.createElement('div');
     div.className = 'bestellung';
     div.innerHTML = `
       <h4>Bestellung #${index + 1}</h4>
       <p><strong>Kunde:</strong> ${b.kunde.name} (${b.kunde.ort})</p>
-      <p><strong>Lieferdatum:</strong> ${b.lieferdatum}</p>
+      <p><strong>Lieferdatum:</strong> ${b.lieferdatum || '-'}</p>
       <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
-      <ul>
-        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname || p.Name || p.name} – ${p.gesamtpreis || (p.menge * (p.Preis ?? p.preis)).toFixed(2)} €</li>`).join('')}
-      </ul>
+      <p><strong>Gesamtwert:</strong> ${gesamtwert.toFixed(2)} €</p>
       <button onclick="bearbeiteBestellung(${index})">✏️ Bearbeiten</button>
       <hr>
     `;
