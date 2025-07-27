@@ -363,7 +363,7 @@ function exportiereWeclappCSV() {
       row[14] = "";                            // Steuersatz
       row[15] = "";                            // Rabatt (%)
       row[16] = b.kommentar || "";             // Notiz
-      row[17] = "";                            // KUNDENNUMMER
+      row[17] = b.kunde.kundennummer || "";    // R: KUNDENNUMMER (wird aus KundenData übernommen, bei Neukunde leer)
       row[18] = "";                            // Kunden Bestellnummer
       row[19] = "";                            // Vertriebsweg
       row[20] = "";                            // Kommission
