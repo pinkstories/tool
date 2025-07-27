@@ -312,8 +312,7 @@ function zeigeGespeicherteBestellungen() {
       <hr>
     `;
     container.appendChild(div);
-  });
-}
+  }
 
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
