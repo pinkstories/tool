@@ -1,5 +1,5 @@
 // Kunden- und Artikel-Daten
-let kunden = [...kundenData];
+let kunden = [...KundenData]; // Großes K!
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
@@ -127,15 +127,127 @@ function bestellungSpeichern() {
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
   warenkorb = [];
   updateWarenkorb();
-  zeigeGespeicherteBestellungen();
-  updateBestellStatistik(); // <-- Statistik nach dem Speichern aktualisieren
+  document.getElementById('gespeicherteListe').style.display = 'none';
+  updateBestellStatistik();
+
+  // Formular zurücksetzen
+  ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  aktuellerKunde = null;
+  aktuellerKundeAnzeige.textContent = '';
+  sperrhinweis.textContent = '';
+  document.getElementById('land').value = 'Deutschland';
+  document.getElementById('neukundeFormular').style.display = 'none';
+  document.getElementById('ustid').style.display = 'none';
 
   alert('Bestellung gespeichert!');
 }
 
 function updateWarenkorb() {
-  // ... (hier kommt dein Warenkorb-Update-Code) ...
+  const liste = document.getElementById('warenkorbListe');
+  const preis = document.getElementById('gesamtpreis');
+  liste.innerHTML = '';
+  let summe = 0;
+  warenkorb.forEach((item, index) => {
+    const einheit = item.Einheit || item.einheit || 'Stk';
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${item.Name || item.name}</strong> (${einheit})<br>
+      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
+      ${item.menge} × ${(item.Preis ?? item.preis).toFixed(2)} € = ${(item.menge * (item.Preis ?? item.preis)).toFixed(2)} €
+      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
+    `;
+    liste.appendChild(li);
+    summe += item.menge * (item.Preis ?? item.preis);
+  });
+  preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
+
+function mengeAnpassen(index, richtung) {
+  const artikel = warenkorb[index];
+  const einheitMenge = artikel.Einheit || artikel.einheit || 1;
+  artikel.menge += richtung * einheitMenge;
+  if (artikel.menge < einheitMenge) {
+    warenkorb.splice(index, 1);
+  }
+  updateWarenkorb();
+}
+
+// Artikelsuche (Scan/Tippen)
+// ACHTUNG: Wir benutzen hier ArtikelData (großes A)!
+scanInput.addEventListener('input', () => {
+  const query = scanInput.value.trim();
+  artikelSuchErgebnisse.innerHTML = '';
+  if (!query) return;
+
+  const treffer = ArtikelData.filter(a =>
+    String(a.Artikelnummer || '').toLowerCase() === query.toLowerCase()
+  );
+
+  if (query.length === 4 && treffer.length === 1) {
+    const artikel = treffer[0];
+    const vielfaches = artikel.Einheit || artikel.einheit || 1;
+    const vorhanden = warenkorb.find(w =>
+      String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
+    );
+    if (vorhanden) {
+      vorhanden.menge += vielfaches;
+    } else {
+      warenkorb.push({ ...artikel, menge: vielfaches });
+    }
+    updateWarenkorb();
+    scanInput.value = '';
+    scanInput.focus();
+    return;
+  }
+
+  const unscharfeTreffer = ArtikelData.filter(a =>
+    (a.Name && a.Name.toLowerCase().includes(query.toLowerCase())) ||
+    (a.Artikelnummer && String(a.Artikelnummer).toLowerCase().includes(query.toLowerCase()))
+  );
+
+  unscharfeTreffer.slice(0, 30).forEach(artikel => {
+    const li = document.createElement('li');
+    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
+    li.onclick = () => {
+      const vielfaches = artikel.Einheit || artikel.einheit || 1;
+      const vorhanden = warenkorb.find(w =>
+        String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer)
+      );
+      if (vorhanden) {
+        vorhanden.menge += vielfaches;
+      } else {
+        warenkorb.push({ ...artikel, menge: vielfaches });
+      }
+      updateWarenkorb();
+      artikelSuchErgebnisse.innerHTML = '';
+      scanInput.value = '';
+      scanInput.focus();
+    };
+    artikelSuchErgebnisse.appendChild(li);
+  });
+});
+
+scanInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const eingabe = scanInput.value.trim();
+    const artikel = ArtikelData.find(a => String(a.Artikelnummer) === eingabe);
+    if (artikel) {
+      const vielfaches = artikel.Einheit || artikel.einheit || 1;
+      const vorhanden = warenkorb.find(w => String(w.Artikelnummer || w.artikelnummer) === String(artikel.Artikelnummer));
+      if (vorhanden) {
+        vorhanden.menge += vielfaches;
+      } else {
+        warenkorb.push({ ...artikel, menge: vielfaches });
+      }
+      updateWarenkorb();
+      scanInput.value = '';
+      artikelSuchErgebnisse.innerHTML = '';
+    }
+  }
+});
 
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
@@ -166,7 +278,7 @@ function zeigeGespeicherteBestellungen() {
       <p><strong>Lieferdatum:</strong> ${b.lieferdatum}</p>
       <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
       <ul>
-        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname} – ${p.gesamtpreis} €</li>`).join('')}
+        ${b.positionen.map(p => `<li>${p.menge} × ${p.artikelname || p.Name || p.name} – ${p.gesamtpreis || (p.menge * (p.Preis ?? p.preis)).toFixed(2)} €</li>`).join('')}
       </ul>
       <button onclick="bearbeiteBestellung(${index})">✏️ Bearbeiten</button>
       <hr>
@@ -179,7 +291,7 @@ function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
   warenkorb = bestellung.positionen.map(p => ({ ...p }));
-  document.getElementById('lieferdatum').value = bestellung.lieferdatum;
+  document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
   bearbeiteBestellungIndex = index;
   updateWarenkorb();
@@ -193,7 +305,7 @@ function loescheAlleBestellungen() {
     zeigeGespeicherteBestellungen();
     updateWarenkorb();
     alert("Alle Bestellungen wurden gelöscht!");
-    updateBestellStatistik(); // <-- Statistik nach dem Löschen aktualisieren
+    updateBestellStatistik();
   }
 }
 
