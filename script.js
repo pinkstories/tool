@@ -269,7 +269,7 @@ function zeigeGespeicherteBestellungen() {
   }
 
   bestellungen.forEach((b, index) => {
-    // Gesamtwert dieser Bestellung berechnen:
+    // Gesamtwert berechnen:
     let gesamtwert = 0;
     b.positionen.forEach(p => {
       const menge = Number(p.menge) || 0;
@@ -280,12 +280,11 @@ function zeigeGespeicherteBestellungen() {
     const div = document.createElement('div');
     div.className = 'bestellung';
     div.innerHTML = `
-      <h4>Bestellung #${index + 1}</h4>
-      <p><strong>Kunde:</strong> ${b.kunde.name} (${b.kunde.ort})</p>
-      <p><strong>Lieferdatum:</strong> ${b.lieferdatum || '-'}</p>
-      <p><strong>Kommentar:</strong> ${b.kommentar || '-'}</p>
-      <p><strong>Gesamtwert:</strong> ${gesamtwert.toFixed(2)} €</p>
-      <button onclick="bearbeiteBestellung(${index})">✏️ Bearbeiten</button>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
+        <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
+        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
+      </div>
       <hr>
     `;
     container.appendChild(div);
