@@ -5,13 +5,13 @@
 
 // --- Datenquellen ---
 // Erwartet werden globale Variablen aus separaten Dateien:
-//   - window.kundenData  (optional; sonst Start leer)
-//   - window.artikelData (erforderlich; Liste der Artikel mit Feldern:
+//   - window.KundenData  (optional; sonst Start leer)
+//   - window.ArtikelData (erforderlich; Liste der Artikel mit Feldern:
 //       artikelnummer, name, einheit, preis, vielfaches )
 // Wenn du alles in einer index.html hast, stelle sicher, dass die <script>-Tags
 // für Kunden/Artikel VOR dieser Datei eingebunden werden.
 
-let kunden = Array.isArray(window.kundenData) ? [...window.kundenData] : [];
+let kunden = Array.isArray(window.KundenData) ? [...window.KundenData] : [];
 let aktuellerKunde = null;
 let warenkorb = [];
 let bestellungen = []; // Sammel-Array aller gespeicherten Bestellungen (für Export)
