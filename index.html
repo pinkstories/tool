@@ -2,83 +2,451 @@
 <html lang="de">
 <head>
   <meta charset="utf-8"/>
-  <title>Messe Tool – Komplett</title>
+  <title>Messe-Bestelltool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: sans-serif; background: #f3f3f3; padding: 2rem; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 2rem; border-radius: 8px; }
-    input, select, textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; }
-    ul { list-style: none; padding: 0; }
-    button { padding: 0.5rem 1rem; margin: 0.25rem; }
-    .red { background-color: #cc0000; color: white; }
-    .green { background-color: #009900; color: white; }
-    #warenkorbListe li { margin-bottom: 0.5rem; }
-    #artikelSuchErgebnisse li, #suchErgebnisse li { cursor: pointer; margin-bottom: 3px; background: #eee; padding: 4px 8px; border-radius: 4px; }
-    #artikelSuchErgebnisse li:hover, #suchErgebnisse li:hover { background: #d1e7dd; }
-    .bestellung { background: #f8f9fa; margin-bottom: 1rem; padding: 1rem; border-radius: 8px; }
-    #sperrhinweis { color: red; font-weight: bold; }
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f3f3f3; margin:0; padding:2rem; }
+    .container { max-width: 900px; margin:auto; background:#fff; padding:2rem; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.06); }
+    h1 { margin-top:0; }
+    .row { display:flex; gap:.5rem; align-items:center; }
+    input, select, textarea { width:100%; padding:.6rem .7rem; border:1px solid #d0d7de; border-radius:8px; box-sizing:border-box; font-size:1rem; }
+    textarea { min-height:90px; resize:vertical; }
+    ul { list-style:none; margin:.25rem 0 0 0; padding:0; }
+    ul li { padding:.45rem .6rem; border-radius:6px; cursor:pointer; }
+    ul li:hover { background:#eef6ff; }
+    .btn { padding:.55rem .9rem; border:none; border-radius:8px; background:#1363df; color:#fff; cursor:pointer; font-weight:600; }
+    .btn.secondary { background:#6c757d; }
+    .btn.warn { background:#cc0000; }
+    .btn.ok { background:#0a8f2e; }
+    .flex { display:flex; gap:.5rem; align-items:center; }
+    .mt-1 { margin-top:.5rem; }
+    .mt-2 { margin-top:1rem; }
+    .mt-3 { margin-top:1.5rem; }
+    .right { text-align:right; }
+    .muted { color:#6b7280; }
+    .pill { display:inline-block; padding:.15rem .5rem; border-radius:999px; background:#fff4e5; color:#a15c00; border:1px solid #ffd8a8; font-size:.85rem; }
+    .danger { color:#b42318; }
+    .list-row { padding:.6rem .4rem; border-bottom:1px dashed #eaeaea; }
+    .qty-btn { padding:.25rem .55rem; border-radius:6px; border:none; color:#fff; font-weight:700; cursor:pointer; }
+    .qty-minus { background:#cc0000; }
+    .qty-plus { background:#0a8f2e; }
+    .totals { font-weight:700; font-size:1.1rem; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:.75rem; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
   </style>
+
+  <!-- Ihre Datenquellen: bitte diese Dateien bereitstellen -->
+  <script>
+    // Falls die externen Dateien nicht vorhanden sind, legen wir leere Fallbacks an,
+    // damit die App nicht abstürzt.
+    window.kundenData = window.kundenData || [];
+    window.artikelData = window.artikelData || [];
+  </script>
+  <!-- Beispiel (aktivieren, wenn Dateien vorliegen):
+  <script src="kundenData.js"></script>
+  <script src="ArtikelData.js"></script>
+  -->
 </head>
 <body>
-<div class="container" style="text-align: left; margin-top: 20px;">
-  <div id="bestellStatistik" style="margin-bottom: 10px; font-weight: bold; text-align: right;"></div>
-  <img src="Logo.png" alt="Logo" width="200" style="margin-bottom: 10px;" />
-  <h1>Messe-Bestelltool</h1>
-  <div style="display:flex; gap:0.5rem; align-items:center;">
-    <input id="kundeSuche" placeholder="Bestandskunde suchen..." style="flex:1; height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;" type="text"/>
-    <button onclick="document.getElementById('neukundeFormular').style.display = 'block'" style="height: 2.5rem; padding: 0 1rem; font-size: 1rem; box-sizing: border-box;">+ Neukunde anlegen</button>
+  <div class="container">
+
+    <h1>Messe-Bestelltool</h1>
+
+    <!-- Kundenbereich -->
+    <div class="row mt-2">
+      <input id="kundeSuche" type="text" placeholder="Bestandskunde suchen (Name oder Ort) …">
+      <button class="btn" id="btnNeukunde">+ Neukunde anlegen</button>
+    </div>
+    <ul id="suchErgebnisse"></ul>
+
+    <!-- Neukunde -->
+    <div id="neukundeFormular" class="mt-2" style="display:none; border:1px solid #e5e7eb; padding:1rem; border-radius:10px;">
+      <h3 class="mt-0">Neukunde anlegen</h3>
+      <div class="grid-2">
+        <input id="firma" placeholder="* Firmenname">
+        <input id="telefon" placeholder="* Telefon">
+        <input id="vorname" placeholder="* Vorname">
+        <input id="email" placeholder="* E-Mail">
+        <input id="nachname" placeholder="* Nachname">
+        <input id="strasse" placeholder="* Straße">
+        <input id="plz" placeholder="* PLZ">
+        <input id="ort" placeholder="* Ort">
+      </div>
+      <div class="grid-2 mt-1">
+        <select id="land">
+          <option value="Deutschland" selected>Deutschland</option>
+          <option>Österreich</option>
+          <option>Frankreich</option>
+          <option>Italien</option>
+          <option>Niederlande</option>
+        </select>
+        <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;">
+      </div>
+      <div class="right mt-2">
+        <button class="btn" id="btnNeukundeSpeichern">Neukunde speichern</button>
+      </div>
+    </div>
+
+    <div id="kundenwarnung" class="mt-1"></div>
+    <p id="aktuellerKunde" class="mt-1 muted"></p>
+    <p id="sperrhinweis" class="danger"></p>
+
+    <!-- Warenkorb / Scan -->
+    <input id="scanInput" class="mt-2" placeholder="Artikelnummer eingeben/scannen und Enter drücken …">
+
+    <ul id="warenkorbListe" class="mt-2"></ul>
+    <p id="gesamtpreis" class="totals">Gesamt: 0,00 €</p>
+
+    <!-- Metadaten -->
+    <div class="grid-2 mt-2">
+      <div>
+        <label for="lieferdatum" class="muted">Gewünschter Liefertermin:</label>
+        <input id="lieferdatum" type="date">
+      </div>
+      <div>
+        <label for="kommentar" class="muted">Kommentare oder Wünsche:</label>
+        <textarea id="kommentar" placeholder="Optional"></textarea>
+      </div>
+    </div>
+
+    <!-- Aktionen -->
+    <div class="row mt-2">
+      <button class="btn" id="btnSpeichern">💾 Bestellung speichern</button>
+      <button class="btn secondary" id="btnLaden">📂 Gespeicherte laden</button>
+      <button class="btn secondary" id="btnListe">🗂️ Liste anzeigen</button>
+      <button class="btn" id="btnExport">📤 Als Weclapp-CSV exportieren</button>
+    </div>
+
+    <div id="gespeicherteListe" class="mt-2"></div>
+
   </div>
-  <ul id="suchErgebnisse"></ul>
-  <div id="neukundeFormular" style="display:none; border:1px solid #ccc; padding:1rem; margin-top:1rem;">
-    <h3>Neukunde anlegen</h3>
-    <input id="firma" placeholder="* Firmenname"/>
-    <input id="vorname" placeholder="* Vorname"/>
-    <input id="nachname" placeholder="* Nachname"/>
-    <input id="strasse" placeholder="* Straße"/>
-    <input id="plz" placeholder="* PLZ"/>
-    <input id="ort" placeholder="* Ort"/>
-    <select id="land">
-      <option selected value="Deutschland">Deutschland</option>
-      <option>Österreich</option>
-      <option>Frankreich</option>
-      <option>Italien</option>
-      <option>Niederlande</option>
-    </select>
-    <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
-    <input id="telefon" placeholder="* Telefon"/>
-    <input id="email" placeholder="* E-Mail"/>
-    <button onclick="neukundeSpeichern()">Neukunde speichern</button>
-  </div>
-  <div id="gespeicherteListe" style="margin-top: 10px; display: none;"></div>
-  <p id="aktuellerKunde"></p>
-  <p id="sperrhinweis"></p>
-  <input id="scanInput" placeholder="Scannen, Artikelnummer oder Name eingeben..."/>
-  <div id="manuellArtikelBox" style="margin-bottom:1rem;">
-  <input id="manuellerArtikelName" placeholder="Artikelbezeichnung (manuell)" style="width:45%;display:inline-block;">
-  <input id="manuellerArtikelPreis" placeholder="Preis (€)" type="number" step="0.01" min="0" style="width:25%;display:inline-block;">
-  <button onclick="manuellenArtikelHinzufuegen()" class="green" style="width:28%;display:inline-block;">+ Artikel hinzufügen</button>
-</div>
-  <ul id="artikelSuchErgebnisse"></ul>
-  <ul id="warenkorbListe"></ul>
-  <p id="gesamtpreis">Gesamt: 0,00 €</p>
-  <label for="lieferdatum">Gewünschter Liefertermin:</label>
-  <input id="lieferdatum" type="date"/>
-  <label for="kommentar">Kommentare oder Wünsche:</label>
-  <textarea id="kommentar"></textarea>
-  <div id="speicherButtons" style="margin-top: 10px;">
-    <button onclick="bestellungSpeichern()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
-      💾 Bestellung speichern
-    </button>
-    <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
-      📂 Bestellungen ein-/ausblenden
-    </button>
-    <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
-      🗑️ Alle Bestellungen löschen
-    </button>
-    <button onclick="exportiereBestellungenWeclapp()">Weclapp-CSV exportieren</button>
-  </div>
-</div>
-<script src="KundenData.js"></script>
-<script src="ArtikelData.js"></script>
-<script src="script.js"></script>
+
+  <script>
+    // -------------------------------
+    // Zustand
+    // -------------------------------
+    let kunden = Array.isArray(window.kundenData) ? [...window.kundenData] : [];
+    let aktuellerKunde = null;
+    let warenkorb = [];
+    let bestellungen = [];
+
+    // -------------------------------
+    // DOM-Refs
+    // -------------------------------
+    const kundeSuche           = document.getElementById('kundeSuche');
+    const suchErgebnisse       = document.getElementById('suchErgebnisse');
+    const aktuellerKundeElm    = document.getElementById('aktuellerKunde');
+    const sperrhinweisElm      = document.getElementById('sperrhinweis');
+    const kundenwarnungElm     = document.getElementById('kundenwarnung');
+
+    const btnNeukunde          = document.getElementById('btnNeukunde');
+    const neukundeFormular     = document.getElementById('neukundeFormular');
+    const ustidFeld            = document.getElementById('ustid');
+    const landDropdown         = document.getElementById('land');
+    const btnNeukundeSpeichern = document.getElementById('btnNeukundeSpeichern');
+
+    const scanInput            = document.getElementById('scanInput');
+    const warenkorbListe       = document.getElementById('warenkorbListe');
+    const gesamtpreisElm       = document.getElementById('gesamtpreis');
+
+    const lieferdatumInput     = document.getElementById('lieferdatum');
+    const kommentarInput       = document.getElementById('kommentar');
+
+    const btnSpeichern         = document.getElementById('btnSpeichern');
+    const btnLaden             = document.getElementById('btnLaden');
+    const btnListe             = document.getElementById('btnListe');
+    const btnExport            = document.getElementById('btnExport');
+    const gespeicherteListeElm = document.getElementById('gespeicherteListe');
+
+    // -------------------------------
+    // Helfer
+    // -------------------------------
+    const fmtMoney = (n) => (Number(n) || 0).toFixed(2).replace('.', ',');
+    const todayISO = () => new Date().toISOString().slice(0,10);
+
+    function ensureLocalStore() {
+      if (!localStorage.getItem('bestellungen')) {
+        localStorage.setItem('bestellungen', JSON.stringify([]));
+      }
+    }
+    function loadLocalBestellungen() {
+      ensureLocalStore();
+      try {
+        return JSON.parse(localStorage.getItem('bestellungen') || '[]');
+      } catch {
+        return [];
+      }
+    }
+    function saveLocalBestellungen(arr) {
+      localStorage.setItem('bestellungen', JSON.stringify(arr || []));
+    }
+
+    function updateWarenkorb() {
+      warenkorbListe.innerHTML = '';
+      let sum = 0;
+      warenkorb.forEach((item, index) => {
+        const einheit = item.einheit || 'Stk';
+        const zeile = document.createElement('li');
+        zeile.className = 'list-row';
+        const ges = (item.menge * item.preis);
+        zeile.innerHTML = `
+          <div><strong>${item.name}</strong> <span class="muted">(${einheit})</span></div>
+          <div class="flex mt-1">
+            <button class="qty-btn qty-minus" aria-label="Menge verringern" onclick="mengeAnpassen(${index}, -1)">−</button>
+            <div style="min-width:16ch; text-align:center;">${item.menge} × ${item.preis.toFixed(2)} € = ${ges.toFixed(2)} €</div>
+            <button class="qty-btn qty-plus" aria-label="Menge erhöhen" onclick="mengeAnpassen(${index}, 1)">+</button>
+          </div>
+        `;
+        sum += ges;
+        warenkorbListe.appendChild(zeile);
+      });
+      gesamtpreisElm.textContent = 'Gesamt: ' + sum.toFixed(2) + ' €';
+    }
+    window.mengeAnpassen = function(index, richtung) {
+      const artikel = warenkorb[index];
+      if (!artikel) return;
+      const step = Number(artikel.vielfaches) || 1;
+      artikel.menge += richtung * step;
+      if (artikel.menge < step) {
+        warenkorb.splice(index, 1);
+      }
+      updateWarenkorb();
+    };
+
+    // -------------------------------
+    // Kundenlogik
+    // -------------------------------
+    landDropdown.addEventListener('change', () => {
+      const land = landDropdown.value;
+      const brauchtUst = (land !== 'Deutschland') && ['Österreich','Frankreich','Italien','Niederlande'].includes(land);
+      ustidFeld.style.display = brauchtUst ? 'block' : 'none';
+    });
+
+    btnNeukunde.addEventListener('click', () => {
+      neukundeFormular.style.display = (neukundeFormular.style.display === 'none' ? 'block' : 'none');
+    });
+
+    btnNeukundeSpeichern.addEventListener('click', () => {
+      const firma    = document.getElementById('firma').value.trim();
+      const vorname  = document.getElementById('vorname').value.trim();
+      const nachname = document.getElementById('nachname').value.trim();
+      const strasse  = document.getElementById('strasse').value.trim();
+      const plz      = document.getElementById('plz').value.trim();
+      const ort      = document.getElementById('ort').value.trim();
+      const land     = document.getElementById('land').value.trim();
+      const ustid    = document.getElementById('ustid').value.trim();
+      const telefon  = document.getElementById('telefon').value.trim();
+      const email    = document.getElementById('email').value.trim();
+
+      if (!firma || !vorname || !nachname || !strasse || !plz || !ort || !telefon || !email) {
+        alert('Bitte alle Pflichtfelder ausfüllen.');
+        return;
+      }
+      if (land !== 'Deutschland' && ustidFeld.style.display === 'block' && ustid === '') {
+        alert('Bitte USt-IdNr. eingeben.');
+        return;
+      }
+      const k = { name: firma, ort, gesperrt:false, vorname, nachname, strasse, plz, land, ustid, telefon, email };
+      kunden.push(k);
+      aktuellerKunde = k;
+      aktuellerKundeElm.textContent = `Neukunde: ${k.name} (${k.ort})`;
+      sperrhinweisElm.textContent = '';
+      neukundeFormular.style.display = 'none';
+      kundeSuche.value = '';
+      suchErgebnisse.innerHTML = '';
+      kundenwarnungElm.innerHTML = `<span class="pill">Neukunde gespeichert</span>`;
+      setTimeout(() => kundenwarnungElm.textContent = '', 2000);
+    });
+
+    kundeSuche.addEventListener('input', () => {
+      const q = kundeSuche.value.toLowerCase().trim();
+      suchErgebnisse.innerHTML = '';
+      if (!q) return;
+
+      const treffer = kunden.filter(k =>
+        (k.name || '').toLowerCase().includes(q) || (k.ort || '').toLowerCase().includes(q)
+      );
+
+      if (treffer.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'Neukunde erfassen';
+        li.style.fontStyle = 'italic';
+        li.onclick = () => {
+          neukundeFormular.style.display = 'block';
+          suchErgebnisse.innerHTML = '';
+        };
+        suchErgebnisse.appendChild(li);
+        return;
+      }
+
+      treffer.slice(0, 10).forEach(k => {
+        const li = document.createElement('li');
+        li.textContent = `${k.name} (${k.ort})`;
+        li.onclick = () => {
+          aktuellerKunde = k;
+          aktuellerKundeElm.textContent = `Kunde: ${k.name} (${k.ort})`;
+          sperrhinweisElm.textContent = k.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
+          suchErgebnisse.innerHTML = '';
+          kundeSuche.value = '';
+        };
+        suchErgebnisse.appendChild(li);
+      });
+    });
+
+    // -------------------------------
+    // Artikellogik (Scan)
+    // -------------------------------
+    scanInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const nummer = e.target.value.trim();
+      if (!nummer) return;
+      const artikel = (Array.isArray(window.artikelData) ? window.artikelData : []).find(a => String(a.artikelnummer) === String(nummer));
+      if (!artikel) {
+        alert('Artikel nicht gefunden.');
+        return;
+      }
+      const vorhandener = warenkorb.find(w => String(w.artikelnummer) === String(nummer));
+      const step = Number(artikel.vielfaches) || 1;
+      if (vorhandener) {
+        vorhandener.menge += step;
+      } else {
+        warenkorb.push({ ...artikel, menge: step });
+      }
+      updateWarenkorb();
+      e.target.value = '';
+    });
+
+    // -------------------------------
+    // Bestellen / Speichern / Export
+    // -------------------------------
+    btnSpeichern.addEventListener('click', () => {
+      if (!aktuellerKunde) {
+        alert('Bitte zuerst einen Kunden auswählen oder erfassen!');
+        return;
+      }
+      if (warenkorb.length === 0) {
+        alert('Der Warenkorb ist leer.');
+        return;
+      }
+
+      const lieferdatum = lieferdatumInput.value || '';
+      const kommentar   = kommentarInput.value || '';
+
+      const daten = warenkorb.map(item => ({
+        kundenname : aktuellerKunde.name,
+        ort        : aktuellerKunde.ort,
+        artikelnummer : item.artikelnummer,
+        artikelname   : item.name,
+        menge      : item.menge,
+        preis      : Number(item.preis || 0).toFixed(2),
+        gesamtpreis: Number(item.menge * item.preis || 0).toFixed(2),
+        lieferdatum,
+        kommentar,
+        zeitstempel: new Date().toISOString()
+      }));
+
+      bestellungen.push(...daten);
+
+      // auch in localStorage persistieren
+      const lokal = loadLocalBestellungen();
+      lokal.push(...daten);
+      saveLocalBestellungen(lokal);
+
+      alert('Bestellung gespeichert!');
+      warenkorb = [];
+      updateWarenkorb();
+    });
+
+    btnLaden.addEventListener('click', () => {
+      const lokal = loadLocalBestellungen();
+      gespeicherteListeElm.innerHTML = '';
+      if (lokal.length === 0) {
+        gespeicherteListeElm.innerHTML = '<span class="muted">Keine gespeicherten Bestellungen gefunden.</span>';
+        return;
+      }
+      const byKunde = {};
+      lokal.forEach(r => {
+        const key = `${r.kundenname} (${r.ort})`;
+        byKunde[key] = (byKunde[key] || 0) + 1;
+      });
+      const ul = document.createElement('ul');
+      Object.entries(byKunde).forEach(([k, anzahl]) => {
+        const li = document.createElement('li');
+        li.textContent = `${k}: ${anzahl} Position(en)`;
+        ul.appendChild(li);
+      });
+      gespeicherteListeElm.appendChild(ul);
+    });
+
+    btnListe.addEventListener('click', () => {
+      const lokal = loadLocalBestellungen();
+      const count = lokal.length;
+      alert(`Gespeicherte Positionen: ${count}`);
+    });
+
+    btnExport.addEventListener('click', exportiereBestellungen);
+
+    // CSV-Export (einziger, bereinigter Pfad)
+    function exportiereBestellungen() {
+      const lokal = loadLocalBestellungen();
+      const quelle = (bestellungen && bestellungen.length > 0) ? bestellungen : lokal;
+
+      if (!quelle || quelle.length === 0) {
+        alert('Keine gespeicherten Bestellungen zum Exportieren.');
+        return;
+      }
+
+      const header = [
+        'Kunde',
+        'Ort',
+        'Artikelnummer',
+        'Artikelbezeichnung',
+        'Menge',
+        'Einzelpreis netto',
+        'Gesamtpreis netto',
+        'Lieferdatum',
+        'Kommentar'
+      ];
+
+      const rows = quelle.map(obj => ([
+        obj.kundenname ?? '',
+        obj.ort ?? '',
+        obj.artikelnummer ?? '',
+        obj.artikelname ?? '',
+        obj.menge ?? '',
+        obj.preis ?? '',
+        obj.gesamtpreis ?? '',
+        obj.lieferdatum ?? '',
+        obj.kommentar ?? ''
+      ]));
+
+      // Semikolon-getrennte CSV, Excel-freundlich (mit BOM) und korrektes Escaping
+      const esc = (v) => {
+        const s = String(v ?? '');
+        // Wenn Semikolon, Anführungszeichen oder Zeilenumbruch vorkommt, in Anführungszeichen setzen und Quotes verdoppeln
+        if (/[;"\n\r]/.test(s)) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const csvBody = [header, ...rows].map(r => r.map(esc).join(';')).join('\r\n');
+      const csvWithBOM = '\uFEFF' + csvBody;
+
+      const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'weclapp_bestellungen.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Defaults
+    lieferdatumInput.value = todayISO();
+  </script>
 </body>
 </html>
