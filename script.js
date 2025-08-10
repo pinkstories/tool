@@ -48,10 +48,10 @@ kundeSuche.addEventListener('input', () => {
 
   treffer.slice(0, 10).forEach(k => {
     const li = document.createElement('li');
-    li.textContent = ${k.name} (${k.ort})${k.gesperrt ? ' ⚠️' : ''};
+    li.textContent = `${k.name} (${k.ort})${k.gesperrt ? ' ⚠️' : ''}`;
     li.onclick = () => {
       aktuellerKunde = k;
-      aktuellerKundeAnzeige.textContent = Kunde: ${k.name} (${k.ort});
+      aktuellerKundeAnzeige.textContent = `Kunde: ${k.name} (${k.ort})`;
       sperrhinweis.textContent = k.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
       suchErgebnisse.innerHTML = '';
       kundeSuche.value = '';
@@ -75,7 +75,7 @@ function updateBestellStatistik() {
     });
   });
 
-  container.textContent = Aufträge: ${anzahl} | Umsatz: ${gesamt.toFixed(2)} €;
+  container.textContent = `Aufträge: ${anzahl} | Umsatz: ${gesamt.toFixed(2)} €`;
 }
 
 function neukundeSpeichern() {
@@ -97,7 +97,7 @@ function neukundeSpeichern() {
   }
   kunden.push(k);
   aktuellerKunde = k;
-  aktuellerKundeAnzeige.textContent = Neukunde: ${k.name} (${k.ort});
+  aktuellerKundeAnzeige.textContent = `Neukunde: ${k.name} (${k.ort})`;
   sperrhinweis.textContent = '';
   document.getElementById('neukundeFormular').style.display = 'none';
 }
@@ -171,12 +171,12 @@ function updateWarenkorb() {
   warenkorb.forEach((item, index) => {
     const einheit = item.Einheit || item.einheit || 'Stk';
     const li = document.createElement('li');
-    li.innerHTML = 
+    li.innerHTML = `
       <strong>${item.Name || item.name}</strong> (${einheit})<br>
       <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
       ${item.menge} × ${(item.Preis ?? item.preis).toFixed(2)} € = ${(item.menge * (item.Preis ?? item.preis)).toFixed(2)} €
       <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
-    ;
+    `;
     liste.appendChild(li);
     summe += item.menge * (item.Preis ?? item.preis);
   });
@@ -227,7 +227,7 @@ scanInput.addEventListener('input', () => {
 
   unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
-    li.textContent = ${artikel.Name} (${artikel.Artikelnummer});
+    li.textContent = `${artikel.Artikelnummer}, ${artikel.Name}, € ${artikel.Preis}`;
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhanden = warenkorb.find(w =>
@@ -277,35 +277,9 @@ function toggleGespeicherteBestellungen() {
   }
 }
 
-
-function berechneBestellSummen() {
-  let anzahl = bestellungen.length;
-  let gesamt = 0;
-  bestellungen.forEach(b => {
-    b.positionen.forEach(p => {
-      const menge = Number(p.menge) || 0;
-      const preis = Number(p.Preis ?? p.preis) || 0;
-      gesamt += menge * preis;
-    });
-  });
-  return { anzahl, gesamt };
-}
-
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
-
-  // Kopfzeile: Aufträge & Umsatz NUR in der Übersicht
-  if (typeof berechneBestellSummen === 'function') {
-    const { anzahl, gesamt } = berechneBestellSummen();
-    const summary = document.createElement('div');
-    summary.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-weight:600;";
-    summary.innerHTML = 
-      <span>📊 Aufträge gesamt: ${anzahl}</span>
-      <span>Umsatz: ${gesamt.toFixed(2)} €</span>
-    ;
-    container.appendChild(summary);
-  }
 
   if (bestellungen.length === 0) {
     container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
@@ -322,16 +296,38 @@ function zeigeGespeicherteBestellungen() {
 
     const div = document.createElement('div');
     div.className = 'bestellung';
-    div.innerHTML = 
+    div.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
         <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
-        <button class="btn-edit" data-index="${index}">✏️ Bearbeiten</button>
+        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
       </div>
       <hr>
-    ;
+    `;
     container.appendChild(div);
   });
+}
+
+function bearbeiteBestellung(index) {
+  const bestellung = bestellungen[index];
+  aktuellerKunde = bestellung.kunde;
+  warenkorb = bestellung.positionen.map(p => ({ ...p }));
+  document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
+  document.getElementById('kommentar').value = bestellung.kommentar || '';
+  bearbeiteBestellungIndex = index;
+  updateWarenkorb();
+  aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
+}
+
+function loescheAlleBestellungen() {
+  if (confirm("Willst du wirklich alle Bestellungen unwiderruflich löschen?")) {
+    localStorage.removeItem('bestellungen');
+    bestellungen = [];
+    zeigeGespeicherteBestellungen();
+    updateWarenkorb();
+    alert("Alle Bestellungen wurden gelöscht!");
+    updateBestellStatistik();
+  }
 }
 
 // ========== WECLAPP CSV EXPORT ==========
@@ -412,7 +408,7 @@ function exportiereWeclappCSV() {
       row[43] = ""; // Manuelle Arbeitszeit pro Einheit
       row[44] = ""; // Abrechnungsart
 
-      csvRows.push(row.map(x => typeof x === "string" && x.includes('\t') ? "${x}" : x).join('\t'));
+      csvRows.push(row.map(x => typeof x === "string" && x.includes('\t') ? `"${x}"` : x).join('\t'));
     });
   });
 
@@ -432,75 +428,4 @@ function exportiereWeclappCSV() {
 window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
   zeigeGespeicherteBestellungen();
-});
-
-// --- Globale Exporte für Inline-Handler ---
-try {
-  window.bearbeiteBestellung = bearbeiteBestellung;
-  window.mengeAnpassen = mengeAnpassen;
-  window.manuellenArtikelHinzufuegen = manuellenArtikelHinzufuegen;
-  window.bestellungSpeichern = bestellungSpeichern;
-  window.toggleGespeicherteBestellungen = toggleGespeicherteBestellungen;
-  window.loescheAlleBestellungen = loescheAlleBestellungen;
-  window.exportiereWeclappCSV = exportiereWeclappCSV;
-} catch(e) {}
-
-// --- Delegation für Bearbeiten-Buttons in der Bestellübersicht ---
-(function initEditDelegation(){
-  const container = document.getElementById('gespeicherteListe');
-  if (!container) return;
-  if (container.__editDelegationBound) return;
-  container.__editDelegationBound = true;
-  container.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-edit');
-    if (!btn) return;
-    const i = parseInt(btn.getAttribute('data-index'), 10);
-    if (!isNaN(i) && typeof bearbeiteBestellung === 'function') {
-      try { bearbeiteBestellung(i); } catch(err){ console.error(err); }
-    }
-  });
-})();
-
-
-
-// --- Safari-sicher: Delegation für ✏️ Bearbeiten nach DOMContentLoaded ---
-function __bindEditDelegation() {
-  var container = document.getElementById('gespeicherteListe');
-  if (!container || container.__editDelegationBound) return;
-  container.__editDelegationBound = true;
-  container.addEventListener('click', function(e) {
-    var el = e.target;
-    while (el && el !== container) {
-      if (el.classList && el.classList.contains('btn-edit')) {
-        var i = parseInt(el.getAttribute('data-index'), 10);
-        if (!isNaN(i) && typeof window.bearbeiteBestellung === 'function') {
-          try { window.bearbeiteBestellung(i); } catch(err) { console.error(err); }
-        }
-        break;
-      }
-      el = el.parentNode;
-    }
-  }, false);
-}
-
-// Nach DOMContentLoaded binden (wichtig für Safari)
-window.addEventListener('DOMContentLoaded', function() {
-  __bindEditDelegation();
-});
-
-
-
-// --- Globale Exporte für Inline-Handler & Delegation (nach Definitionen) ---
-window.addEventListener('DOMContentLoaded', function(){
-  try {
-    if (typeof bearbeiteBestellung === 'function') window.bearbeiteBestellung = bearbeiteBestellung;
-    if (typeof mengeAnpassen === 'function') window.mengeAnpassen = mengeAnpassen;
-    if (typeof manuellenArtikelHinzufuegen === 'function') window.manuellenArtikelHinzufuegen = manuellenArtikelHinzufuegen;
-    if (typeof bestellungSpeichern === 'function') window.bestellungSpeichern = bestellungSpeichern;
-    if (typeof toggleGespeicherteBestellungen === 'function') window.toggleGespeicherteBestellungen = toggleGespeicherteBestellungen;
-    if (typeof loescheAlleBestellungen === 'function') window.loescheAlleBestellungen = loescheAlleBestellungen;
-    if (typeof exportiereWeclappCSV === 'function') window.exportiereWeclappCSV = exportiereWeclappCSV;
-  } catch(e) {}
-  // falls Übersicht erst später gerendert wird, delegationsbinding erneut versuchen
-  setTimeout(__bindEditDelegation, 0);
 });
