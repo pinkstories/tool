@@ -265,49 +265,57 @@ scanInput.addEventListener('keydown', (e) => {
     }
   }
 });
-
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
-  if (container.style.display === 'block') {
-    container.style.display = 'none';
-    container.innerHTML = '';
-  } else {
-    container.style.display = 'block';
-    zeigeGespeicherteBestellungen();
-  }
+  const willShow = container.style.display !== 'block';
+  container.style.display = willShow ? 'block' : 'none';
+  if (willShow) zeigeGespeicherteBestellungen();
 }
-
+function berechneBestellSummen() {
+  let anzahl = bestellungen.length, gesamt = 0;
+  bestellungen.forEach(b => b.positionen.forEach(p => {
+    const menge = Number(p.menge)||0, preis = Number(p.Preis ?? p.preis)||0;
+    gesamt += menge * preis;
+  }));
+  return { anzahl, gesamt };
+}
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
 
+  // 📊 Summenzeile
+  const { anzahl, gesamt } = berechneBestellSummen();
+  const summary = document.createElement('div');
+  summary.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-weight:600;";
+  summary.innerHTML = `<span>📊 Aufträge gesamt: ${anzahl}</span><span>Umsatz: ${gesamt.toFixed(2)} €</span>`;
+  container.appendChild(summary);
+
   if (bestellungen.length === 0) {
-    container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    const empty = document.createElement('div');
+    empty.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    container.appendChild(empty);   // Summary bleibt stehen
     return;
   }
 
   bestellungen.forEach((b, index) => {
     let gesamtwert = 0;
     b.positionen.forEach(p => {
-      const menge = Number(p.menge) || 0;
-      const preis = Number(p.Preis ?? p.preis) || 0;
+      const menge = Number(p.menge)||0, preis = Number(p.Preis ?? p.preis)||0;
       gesamtwert += menge * preis;
     });
-
     const div = document.createElement('div');
     div.className = 'bestellung';
     div.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
         <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
         <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
-        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
+        <button onclick="bearbeiteBestellung(${index})" style="margin-left:10px;">✏️ Bearbeiten</button>
       </div>
       <hr>
     `;
     container.appendChild(div);
   });
-}
-
+  }
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
