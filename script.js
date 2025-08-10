@@ -114,33 +114,60 @@ function neukundeSpeichern() {
 }
 
 function bestellungSpeichern() {
-  if (!aktuellerKunde) {
-    alert('Bitte zuerst einen Kunden auswählen.');
-    return;
-  }
-  if (warenkorb.length === 0) {
-    alert('Bitte mindestens ein Produkt in den Warenkorb legen.');
-    return;
-  }
-  // Positionen ohne evtl. vorhandenen „Versand“ zusammenstellen
-const positionenOhneVersand = warenkorb
-  .filter(p => {
-    const name = (p.Name || p.name || '').toLowerCase();
-    const nr = String(p.Artikelnummer || p.artikelnummer || '');
-    return !(name === 'versand' || nr.startsWith('VERSAND-'));
-  })
-  .map(p => ({ ...p }));
+  if (!aktuellerKunde) { alert('Bitte zuerst einen Kunden auswählen.'); return; }
+  if (warenkorb.length === 0) { alert('Bitte mindestens ein Produkt in den Warenkorb legen.'); return; }
 
-// Versand als letzte Position anhängen (aus Kundenland)
-const vk = Number(versandkostenProLand?.[aktuellerKunde?.land]) || 0;
-if (aktuellerKunde && vk > 0) {
-  positionenOhneVersand.push({
-    Name: "Versand",
-    Preis: vk,
-    menge: 1,
-    Artikelnummer: "VERSAND-" + aktuellerKunde.land
+  // 1) Falls doch Versand im Warenkorb wäre: rausfiltern
+  const positionenOhneVersand = warenkorb
+    .filter(p => !istVersandPosition(p))
+    .map(p => ({ ...p }));
+
+  // 2) Versand passend zum Land als letzte Position ergänzen
+  const vk = Number(versandkostenProLand?.[aktuellerKunde.land]) || 0;
+  if (vk > 0) {
+    positionenOhneVersand.push({
+      Name: 'Versand',
+      Preis: vk,
+      menge: 1,
+      Artikelnummer: 'VERSAND-' + aktuellerKunde.land
+    });
+  }
+
+  const bestellung = {
+    kunde: aktuellerKunde,
+    positionen: positionenOhneVersand,
+    lieferdatum: document.getElementById('lieferdatum').value,
+    kommentar: document.getElementById('kommentar').value,
+    timestamp: Date.now()
+  };
+
+  if (bearbeiteBestellungIndex !== null) {
+    bestellungen[bearbeiteBestellungIndex] = bestellung;
+    bearbeiteBestellungIndex = null;
+  } else {
+    bestellungen.push(bestellung);
+  }
+
+  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
+  warenkorb = [];
+  updateWarenkorb();
+  document.getElementById('gespeicherteListe').style.display = 'none';
+  updateBestellStatistik();
+
+  // Formular zurücksetzen …
+  ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
   });
+  aktuellerKunde = null;
+  aktuellerKundeAnzeige.textContent = '';
+  sperrhinweis.textContent = '';
+  document.getElementById('land').value = 'Deutschland';
+  document.getElementById('neukundeFormular').style.display = 'none';
+  document.getElementById('ustid').style.display = 'none';
+
+  alert('Bestellung gespeichert!');
 }
+
 function istVersandPosition(p){
   const name = (p?.Name || p?.name || '').trim().toLowerCase();
   const nr   = String(p?.Artikelnummer || p?.artikelnummer || '');
