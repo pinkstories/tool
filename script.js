@@ -268,10 +268,10 @@ scanInput.addEventListener('keydown', (e) => {
 
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
-  if (container.style.display === 'block') {
-    container.style.display = 'none';
-    container.innerHTML = '';
-  } else {
+  const willShow = container.style.display !== 'block';
+  container.style.display = willShow ? 'block' : 'none';
+  if (willShow) { zeigeGespeicherteBestellungen(); }
+} else {
     container.style.display = 'block';
     zeigeGespeicherteBestellungen();
   }
@@ -282,7 +282,9 @@ function zeigeGespeicherteBestellungen() {
   container.innerHTML = '';
 
   if (bestellungen.length === 0) {
-    container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    const empty = document.createElement('div');
+    empty.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    container.appendChild(empty);
     return;
   }
 
@@ -429,5 +431,3 @@ window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
   zeigeGespeicherteBestellungen();
 });
-// Bearbeiten global bereitstellen
-try { window.bearbeiteBestellung = bearbeiteBestellung; } catch(e) {}
