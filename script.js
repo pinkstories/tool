@@ -227,7 +227,7 @@ scanInput.addEventListener('input', () => {
 
   unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
-    li.textContent = `${artikel.Artikelnummer}, ${artikel.Name}, € ${artikel.Preis}`;
+    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhanden = warenkorb.find(w =>
@@ -277,9 +277,35 @@ function toggleGespeicherteBestellungen() {
   }
 }
 
+
+function berechneBestellSummen() {
+  let anzahl = bestellungen.length;
+  let gesamt = 0;
+  bestellungen.forEach(b => {
+    b.positionen.forEach(p => {
+      const menge = Number(p.menge) || 0;
+      const preis = Number(p.Preis ?? p.preis) || 0;
+      gesamt += menge * preis;
+    });
+  });
+  return { anzahl, gesamt };
+}
+
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
+
+  // Kopfzeile mit Statistik (nur in der Übersicht sichtbar)
+  if (typeof berechneBestellSummen === 'function') {
+    const { anzahl, gesamt } = berechneBestellSummen();
+    const summary = document.createElement('div');
+    summary.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-weight:600;";
+    summary.innerHTML = `
+      <span>📊 Aufträge gesamt: ${anzahl}</span>
+      <span>Umsatz: ${gesamt.toFixed(2)} €</span>
+    `;
+    container.appendChild(summary);
+  }
 
   if (bestellungen.length === 0) {
     container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
@@ -306,28 +332,6 @@ function zeigeGespeicherteBestellungen() {
     `;
     container.appendChild(div);
   });
-}
-
-function bearbeiteBestellung(index) {
-  const bestellung = bestellungen[index];
-  aktuellerKunde = bestellung.kunde;
-  warenkorb = bestellung.positionen.map(p => ({ ...p }));
-  document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
-  document.getElementById('kommentar').value = bestellung.kommentar || '';
-  bearbeiteBestellungIndex = index;
-  updateWarenkorb();
-  aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
-}
-
-function loescheAlleBestellungen() {
-  if (confirm("Willst du wirklich alle Bestellungen unwiderruflich löschen?")) {
-    localStorage.removeItem('bestellungen');
-    bestellungen = [];
-    zeigeGespeicherteBestellungen();
-    updateWarenkorb();
-    alert("Alle Bestellungen wurden gelöscht!");
-    updateBestellStatistik();
-  }
 }
 
 // ========== WECLAPP CSV EXPORT ==========
@@ -428,13 +432,4 @@ function exportiereWeclappCSV() {
 window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
   zeigeGespeicherteBestellungen();
-});
-Object.assign(window, {
-  bearbeiteBestellung,
-  mengeAnpassen,
-  manuellenArtikelHinzufuegen,
-  bestellungSpeichern,
-  toggleGespeicherteBestellungen,
-  loescheAlleBestellungen,
-  exportiereWeclappCSV
 });
