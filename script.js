@@ -461,3 +461,47 @@ try {
   });
 })();
 
+
+
+// --- Safari-sicher: Delegation für ✏️ Bearbeiten nach DOMContentLoaded ---
+function __bindEditDelegation() {
+  var container = document.getElementById('gespeicherteListe');
+  if (!container || container.__editDelegationBound) return;
+  container.__editDelegationBound = true;
+  container.addEventListener('click', function(e) {
+    var el = e.target;
+    while (el && el !== container) {
+      if (el.classList && el.classList.contains('btn-edit')) {
+        var i = parseInt(el.getAttribute('data-index'), 10);
+        if (!isNaN(i) && typeof window.bearbeiteBestellung === 'function') {
+          try { window.bearbeiteBestellung(i); } catch(err) { console.error(err); }
+        }
+        break;
+      }
+      el = el.parentNode;
+    }
+  }, false);
+}
+
+// Nach DOMContentLoaded binden (wichtig für Safari)
+window.addEventListener('DOMContentLoaded', function() {
+  __bindEditDelegation();
+});
+
+
+
+// --- Globale Exporte für Inline-Handler & Delegation (nach Definitionen) ---
+window.addEventListener('DOMContentLoaded', function(){
+  try {
+    if (typeof bearbeiteBestellung === 'function') window.bearbeiteBestellung = bearbeiteBestellung;
+    if (typeof mengeAnpassen === 'function') window.mengeAnpassen = mengeAnpassen;
+    if (typeof manuellenArtikelHinzufuegen === 'function') window.manuellenArtikelHinzufuegen = manuellenArtikelHinzufuegen;
+    if (typeof bestellungSpeichern === 'function') window.bestellungSpeichern = bestellungSpeichern;
+    if (typeof toggleGespeicherteBestellungen === 'function') window.toggleGespeicherteBestellungen = toggleGespeicherteBestellungen;
+    if (typeof loescheAlleBestellungen === 'function') window.loescheAlleBestellungen = loescheAlleBestellungen;
+    if (typeof exportiereWeclappCSV === 'function') window.exportiereWeclappCSV = exportiereWeclappCSV;
+  } catch(e) {}
+  // falls Übersicht erst später gerendert wird, delegationsbinding erneut versuchen
+  setTimeout(__bindEditDelegation, 0);
+});
+
