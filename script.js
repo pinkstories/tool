@@ -16,15 +16,6 @@ const landDropdown = document.getElementById('land');
 const scanInput = document.getElementById('scanInput');
 const artikelSuchErgebnisse = document.getElementById('artikelSuchErgebnisse');
 
-// ==== Statistik-Visibility & Button-Toggle ====
-let showStats = localStorage.getItem('showStats') === '1';
-
-function applyStatsVisibility() {
-  const el = document.getElementById('bestellStatistik');
-  if (!el) return;
-  el.style.display = showStats ? 'block' : 'none';
-}
-
 // Beim Wechsel des Landes das USt-Id Feld ein-/ausblenden
 landDropdown.addEventListener('change', () => {
   ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
@@ -71,7 +62,7 @@ kundeSuche.addEventListener('input', () => {
 
 function updateBestellStatistik() {
   const container = document.getElementById('bestellStatistik');
-  if (!container || !showStats) return; // nur berechnen/anzeigen, wenn sichtbar
+  if (!container) return;
 
   let anzahl = bestellungen.length;
   let gesamt = 0;
@@ -417,7 +408,7 @@ function exportiereWeclappCSV() {
       row[43] = ""; // Manuelle Arbeitszeit pro Einheit
       row[44] = ""; // Abrechnungsart
 
-      csvRows.push(row.map(x => typeof x === "string" and x is not None and '\t' in x and not isinstance(x, (int, float)) and not x.isnumeric() and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True) and False or (isinstance(x, str) and '\t' in x) and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True and True) and ('"' + x + '"') or x).join('\t'))
+      csvRows.push(row.map(x => typeof x === "string" && x.includes('\t') ? `"${x}"` : x).join('\t'));
     });
   });
 
@@ -433,28 +424,8 @@ function exportiereWeclappCSV() {
 
 // ========== /WECLAPP EXPORT ==========
 
-// Initialisierung nach DOM-Load
+// Statistik beim Laden der Seite direkt anzeigen
 window.addEventListener('DOMContentLoaded', () => {
-  // Statistik-Button verbinden
-  const btn = document.getElementById('btnStats');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      showStats = !showStats;
-      localStorage.setItem('showStats', showStats ? '1' : '0');
-      applyStatsVisibility();
-      if (showStats) updateBestellStatistik();
-    });
-  }
-
-  applyStatsVisibility();
-  if (showStats) updateBestellStatistik();
+  updateBestellStatistik();
   zeigeGespeicherteBestellungen();
-});
-
-// Optional: zusätzlich Tastenkürzel Strg+Umschalt+S
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-    const btn = document.getElementById('btnStats');
-    if (btn) btn.click();
-  }
 });
