@@ -227,7 +227,7 @@ scanInput.addEventListener('input', () => {
 
   unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
-    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
+    li.textContent = `${artikel.Name},${artikel.Artikelnummer},${artikel.Preis}`;
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhanden = warenkorb.find(w =>
