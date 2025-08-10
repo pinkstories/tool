@@ -150,10 +150,10 @@ function bestellungSpeichern() {
 
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
   warenkorb = [];
-  updateWarenkorb();
-  document.getElementById('gespeicherteListe').style.display = 'none';
-  updateBestellStatistik();
-
+aktuellerKunde = null;           // <- VOR dem Rendern auf null setzen
+updateWarenkorb();               // jetzt wird keine Versandzeile mehr angezeigt
+document.getElementById('gespeicherteListe').style.display = 'none';
+updateBestellStatistik();
   // Formular zurücksetzen …
   ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -200,33 +200,30 @@ function updateWarenkorb() {
   const preis = document.getElementById('gesamtpreis');
   liste.innerHTML = '';
   let summe = 0;
+
   warenkorb.forEach((item, index) => {
-    const einheit = item.Einheit || item.einheit || 'Stk';
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${item.Name || item.name}</strong> (${einheit})<br>
-      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
-      ${item.menge} × ${(item.Preis ?? item.preis).toFixed(2)} € = ${(item.menge * (item.Preis ?? item.preis)).toFixed(2)} €
-      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
-    `;
-    liste.appendChild(li);
+    // ... (dein bestehender Code)
     summe += item.menge * (item.Preis ?? item.preis);
   });
-  const vk = getVersandFuerAktuellenKunden();
-if (vk > 0) {
-  const liV = document.createElement('li');
-  liV.style.marginTop = '6px';
-  liV.style.paddingTop = '6px';
-  liV.style.borderTop = '1px dashed #ccc';
-  liV.innerHTML = `
-  <strong>Versand (${aktuellerKunde?.land || '-'})</strong><br>
-  1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
-`;
-  liste.appendChild(liV);
-  summe += vk;
-}
+
+  // Nur wenn Kunde existiert UND der Warenkorb nicht leer ist
+  const vk = (aktuellerKunde && warenkorb.length > 0) ? getVersandFuerAktuellenKunden() : 0;
+  if (vk > 0) {
+    const liV = document.createElement('li');
+    liV.style.marginTop = '6px';
+    liV.style.paddingTop = '6px';
+    liV.style.borderTop = '1px dashed #ccc';
+    liV.innerHTML = `
+      <strong>Versand (${aktuellerKunde?.land || '-'})</strong><br>
+      1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
+    `;
+    liste.appendChild(liV);
+    summe += vk;
+  }
+
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
+
 
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
