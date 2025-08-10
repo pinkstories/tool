@@ -326,7 +326,7 @@ function zeigeGespeicherteBestellungen() {
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
         <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
-        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
+        <button class="btn-edit" data-index="${index}">✏️ Bearbeiten</button>
       </div>
       <hr>
     `;
@@ -444,4 +444,20 @@ try {
   window.loescheAlleBestellungen = loescheAlleBestellungen;
   window.exportiereWeclappCSV = exportiereWeclappCSV;
 } catch(e) {}
+
+// --- Delegation für Bearbeiten-Buttons in der Bestellübersicht ---
+(function initEditDelegation(){
+  const container = document.getElementById('gespeicherteListe');
+  if (!container) return;
+  if (container.__editDelegationBound) return;
+  container.__editDelegationBound = true;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-edit');
+    if (!btn) return;
+    const i = parseInt(btn.getAttribute('data-index'), 10);
+    if (!isNaN(i) && typeof bearbeiteBestellung === 'function') {
+      try { bearbeiteBestellung(i); } catch(err){ console.error(err); }
+    }
+  });
+})();
 
