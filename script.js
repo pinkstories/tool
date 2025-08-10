@@ -1,10 +1,3 @@
-// Kunden- und Artikel-Daten
-let kunden = [...KundenData]; // Großes K!
-let aktuellerKunde = null;
-let warenkorb = [];
-let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
-let gespeicherteSichtbar = false;
-let bearbeiteBestellungIndex = null;
 
 const versandkostenProLand = {
   "Deutschland": 14.90,
@@ -14,6 +7,15 @@ const versandkostenProLand = {
   "Schweiz": 39.00,
   "Belgien": 19.90
 };
+
+
+// Kunden- und Artikel-Daten
+let kunden = [...KundenData]; // Großes K!
+let aktuellerKunde = null;
+let warenkorb = [];
+let bestellungen = JSON.parse(localStorage.getItem('bestellungen') || '[]');
+let gespeicherteSichtbar = false;
+let bearbeiteBestellungIndex = null;
 
 // DOM-Elemente
 const kundeSuche = document.getElementById('kundeSuche');
@@ -120,31 +122,13 @@ function bestellungSpeichern() {
     alert('Bitte mindestens ein Produkt in den Warenkorb legen.');
     return;
   }
-  // Positionen ohne Versand zusammenstellen
-const positionenOhneVersand = warenkorb.filter(p => {
-  const name = (p.Name || p.name || "").toLowerCase();
-  const nr = String(p.Artikelnummer || p.artikelnummer || "");
-  return !(name === 'versand' || nr.startsWith('VERSAND-'));
-}).map(p => ({ ...p }));
-
-// Versand als letzte Position anhängen (falls Preis > 0 und Kunde gesetzt)
-const vkSpeichern = getVersandFuerAktuellenKunden();
-if (aktuellerKunde && vkSpeichern > 0) {
-  positionenOhneVersand.push({
-    Name: "Versand",
-    Preis: vkSpeichern,
-    menge: 1,
-    Artikelnummer: "VERSAND-" + aktuellerKunde.land
-  });
-}
-
-const bestellung = {
-  kunde: aktuellerKunde,
-  positionen: positionenOhneVersand,
-  lieferdatum: document.getElementById('lieferdatum').value,
-  kommentar: document.getElementById('kommentar').value,
-  timestamp: Date.now() // Zeitstempel als Auftragsnummer
-};
+  const bestellung = {
+    kunde: aktuellerKunde,
+    positionen: warenkorb.map(p => ({ ...p })),
+    lieferdatum: document.getElementById('lieferdatum').value,
+    kommentar: document.getElementById('kommentar').value,
+    timestamp: Date.now() // Zeitstempel als Auftragsnummer
+  };
 
   if (bearbeiteBestellungIndex !== null) {
     bestellungen[bearbeiteBestellungIndex] = bestellung;
@@ -190,12 +174,6 @@ function manuellenArtikelHinzufuegen() {
   document.getElementById('manuellerArtikelPreis').value = '';
   updateWarenkorb();
 }
-function getVersandFuerAktuellenKunden(){
-  if (!aktuellerKunde) return 0;
-  const vk = versandkostenProLand[aktuellerKunde.land];
-  return Number(vk) || 0;
-}
-
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -206,31 +184,6 @@ function updateWarenkorb() {
     const li = document.createElement('li');
     li.innerHTML = `
       <strong>${item.Name || item.name}</strong> (${einheit})<br>
-      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
-      ${item.menge} × ${(item.Preis ?? item.preis).toFixed(2)} € = ${(item.menge * (item.Preis ?? item.preis)).toFixed(2)} €
-      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
-    `;
-    liste.appendChild(li);
-    summe += item.menge * (item.Preis ?? item.preis);
-  });
-
-  // Versand sichtbar anhängen (nur wenn Kunde gewählt)
-  const vk = getVersandFuerAktuellenKunden();
-  if (vk > 0) {
-    const liV = document.createElement('li');
-    liV.style.marginTop = '6px';
-    liV.style.paddingTop = '6px';
-    liV.style.borderTop = '1px dashed #ccc';
-    liV.innerHTML = `
-      <strong>Versand (${aktuellerKunde.land})</strong><br>
-      1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
-    `;
-    liste.appendChild(liV);
-    summe += vk;
-  }
-
-  preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
-}</strong> (${einheit})<br>
       <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
       ${item.menge} × ${(item.Preis ?? item.preis).toFixed(2)} € = ${(item.menge * (item.Preis ?? item.preis)).toFixed(2)} €
       <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
@@ -285,7 +238,7 @@ scanInput.addEventListener('input', () => {
 
   unscharfeTreffer.slice(0, 30).forEach(artikel => {
     const li = document.createElement('li');
-    li.textContent = `${artikel.Name} (${artikel.Artikelnummer})`;
+    li.textContent = `${artikel.Artikelnummer}, ${artikel.Name}, € ${artikel.Preis}`;
     li.onclick = () => {
       const vielfaches = artikel.Einheit || artikel.einheit || 1;
       const vorhanden = warenkorb.find(w =>
@@ -323,57 +276,61 @@ scanInput.addEventListener('keydown', (e) => {
     }
   }
 });
-
 function toggleGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
-  if (container.style.display === 'block') {
-    container.style.display = 'none';
-    container.innerHTML = '';
-  } else {
-    container.style.display = 'block';
-    zeigeGespeicherteBestellungen();
-  }
+  const willShow = container.style.display !== 'block';
+  container.style.display = willShow ? 'block' : 'none';
+  if (willShow) zeigeGespeicherteBestellungen();
 }
-
+function berechneBestellSummen() {
+  let anzahl = bestellungen.length, gesamt = 0;
+  bestellungen.forEach(b => b.positionen.forEach(p => {
+    const menge = Number(p.menge)||0, preis = Number(p.Preis ?? p.preis)||0;
+    gesamt += menge * preis;
+  }));
+  return { anzahl, gesamt };
+}
 function zeigeGespeicherteBestellungen() {
   const container = document.getElementById('gespeicherteListe');
   container.innerHTML = '';
 
+  // 📊 Summenzeile
+  const { anzahl, gesamt } = berechneBestellSummen();
+  const summary = document.createElement('div');
+  summary.style.cssText = "display:flex;justify-content:space-between;align-items:center;background:#f1f3f5;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-weight:600;";
+  summary.innerHTML = `<span>📊 Aufträge gesamt: ${anzahl}</span><span>Umsatz: ${gesamt.toFixed(2)} €</span>`;
+  container.appendChild(summary);
+
   if (bestellungen.length === 0) {
-    container.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    const empty = document.createElement('div');
+    empty.textContent = 'Keine gespeicherten Bestellungen gefunden.';
+    container.appendChild(empty);   // Summary bleibt stehen
     return;
   }
 
   bestellungen.forEach((b, index) => {
     let gesamtwert = 0;
     b.positionen.forEach(p => {
-      const menge = Number(p.menge) || 0;
-      const preis = Number(p.Preis ?? p.preis) || 0;
+      const menge = Number(p.menge)||0, preis = Number(p.Preis ?? p.preis)||0;
       gesamtwert += menge * preis;
     });
-
     const div = document.createElement('div');
     div.className = 'bestellung';
     div.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
         <span><strong>${b.kunde.name} (${b.kunde.ort})</strong></span>
         <span><strong>${gesamtwert.toFixed(2)} €</strong></span>
-        <button onclick="bearbeiteBestellung(${index})" style="margin-left: 10px;">✏️ Bearbeiten</button>
+        <button onclick="bearbeiteBestellung(${index})" style="margin-left:10px;">✏️ Bearbeiten</button>
       </div>
       <hr>
     `;
     container.appendChild(div);
   });
-}
-
+  }
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
-  warenkorb = bestellung.positionen.filter(p => {
-    const name = (p.Name || p.name || '').toLowerCase();
-    const nr = String(p.Artikelnummer || p.artikelnummer || '');
-    return !(name === 'versand' || nr.startsWith('VERSAND-'));
-  }).map(p => ({ ...p }));
+  warenkorb = bestellung.positionen.map(p => ({ ...p }));
   document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
   bearbeiteBestellungIndex = index;
