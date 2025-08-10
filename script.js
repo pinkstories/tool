@@ -141,6 +141,12 @@ if (aktuellerKunde && vk > 0) {
     Artikelnummer: "VERSAND-" + aktuellerKunde.land
   });
 }
+function istVersandPosition(p){
+  const name = (p?.Name || p?.name || '').trim().toLowerCase();
+  const nr   = String(p?.Artikelnummer || p?.artikelnummer || '');
+  return name === 'versand' || nr.startsWith('VERSAND-');
+}
+
 const bestellung = {
   kunde: aktuellerKunde,
   positionen: positionenOhneVersand,
@@ -366,13 +372,12 @@ function zeigeGespeicherteBestellungen() {
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
+
+  // Nur Produktpositionen übernehmen (kein Versand zurück in den Warenkorb)
   warenkorb = bestellung.positionen
-  .filter(p => {
-    const name = (p.Name || p.name || '').toLowerCase();
-    const nr = String(p.Artikelnummer || p.artikelnummer || '');
-    return !(name === 'versand' || nr.startsWith('VERSAND-'));
-  })
-  .map(p => ({ ...p }));
+    .filter(p => !istVersandPosition(p))
+    .map(p => ({ ...p }));
+
   document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
   bearbeiteBestellungIndex = index;
