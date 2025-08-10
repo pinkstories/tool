@@ -429,3 +429,12 @@ window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
   zeigeGespeicherteBestellungen();
 });
+Object.assign(window, {
+  bearbeiteBestellung,
+  mengeAnpassen,
+  manuellenArtikelHinzufuegen,
+  bestellungSpeichern,
+  toggleGespeicherteBestellungen,
+  loescheAlleBestellungen,
+  exportiereWeclappCSV
+});
