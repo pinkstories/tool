@@ -66,6 +66,7 @@ kundeSuche.addEventListener('input', () => {
       sperrhinweis.textContent = k.gesperrt ? '⚠️ Achtung: Dieser Kunde ist gesperrt!' : '';
       suchErgebnisse.innerHTML = '';
       kundeSuche.value = '';
+      updateWarenkorb();
     };
     suchErgebnisse.appendChild(li);
   });
@@ -150,7 +151,6 @@ function bestellungSpeichern() {
 
   localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
   warenkorb = [];
-aktuellerKunde = null;           // <- VOR dem Rendern auf null setzen
 updateWarenkorb();               // jetzt wird keine Versandzeile mehr angezeigt
 document.getElementById('gespeicherteListe').style.display = 'none';
 updateBestellStatistik();
@@ -201,12 +201,31 @@ function updateWarenkorb() {
   liste.innerHTML = '';
   let summe = 0;
 
+  const toNum = v => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // Produkte rendern
   warenkorb.forEach((item, index) => {
-    // ... (dein bestehender Code)
-    summe += item.menge * (item.Preis ?? item.preis);
+    const name    = item.Name ?? item.name ?? '';
+    const einheit = item.Einheit ?? item.einheit ?? 'Stk';
+    const stPreis = toNum(item.Preis ?? item.preis);
+    const menge   = toNum(item.menge);
+
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${name}</strong> (${einheit})<br>
+      <button class="red" onclick="mengeAnpassen(${index}, -1)">-</button>
+      ${menge} × ${stPreis.toFixed(2)} € = ${(menge * stPreis).toFixed(2)} €
+      <button class="green" onclick="mengeAnpassen(${index}, 1)">+</button>
+    `;
+    liste.appendChild(li);
+
+    summe += menge * stPreis;
   });
 
-  // Nur wenn Kunde existiert UND der Warenkorb nicht leer ist
+  // Versand nur anzeigen, wenn Kunde existiert UND Warenkorb nicht leer ist
   const vk = (aktuellerKunde && warenkorb.length > 0) ? getVersandFuerAktuellenKunden() : 0;
   if (vk > 0) {
     const liV = document.createElement('li');
@@ -223,8 +242,6 @@ function updateWarenkorb() {
 
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
-
-
 function mengeAnpassen(index, richtung) {
   const artikel = warenkorb[index];
   const einheitMenge = artikel.Einheit || artikel.einheit || 1;
