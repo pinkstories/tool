@@ -366,7 +366,13 @@ function zeigeGespeicherteBestellungen() {
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
-  warenkorb = bestellung.positionen.map(p => ({ ...p }));
+  warenkorb = bestellung.positionen
+  .filter(p => {
+    const name = (p.Name || p.name || '').toLowerCase();
+    const nr = String(p.Artikelnummer || p.artikelnummer || '');
+    return !(name === 'versand' || nr.startsWith('VERSAND-'));
+  })
+  .map(p => ({ ...p }));
   document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
   bearbeiteBestellungIndex = index;
