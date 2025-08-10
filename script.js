@@ -122,14 +122,32 @@ function bestellungSpeichern() {
     alert('Bitte mindestens ein Produkt in den Warenkorb legen.');
     return;
   }
-  const bestellung = {
-    kunde: aktuellerKunde,
-    positionen: warenkorb.map(p => ({ ...p })),
-    lieferdatum: document.getElementById('lieferdatum').value,
-    kommentar: document.getElementById('kommentar').value,
-    timestamp: Date.now() // Zeitstempel als Auftragsnummer
-  };
+  // Positionen ohne evtl. vorhandenen „Versand“ zusammenstellen
+const positionenOhneVersand = warenkorb
+  .filter(p => {
+    const name = (p.Name || p.name || '').toLowerCase();
+    const nr = String(p.Artikelnummer || p.artikelnummer || '');
+    return !(name === 'versand' || nr.startsWith('VERSAND-'));
+  })
+  .map(p => ({ ...p }));
 
+// Versand als letzte Position anhängen (aus Kundenland)
+const vk = Number(versandkostenProLand?.[aktuellerKunde?.land]) || 0;
+if (aktuellerKunde && vk > 0) {
+  positionenOhneVersand.push({
+    Name: "Versand",
+    Preis: vk,
+    menge: 1,
+    Artikelnummer: "VERSAND-" + aktuellerKunde.land
+  });
+}
+const bestellung = {
+  kunde: aktuellerKunde,
+  positionen: positionenOhneVersand,
+  lieferdatum: document.getElementById('lieferdatum').value,
+  kommentar: document.getElementById('kommentar').value,
+  timestamp: Date.now() // Zeitstempel als Auftragsnummer
+};
   if (bearbeiteBestellungIndex !== null) {
     bestellungen[bearbeiteBestellungIndex] = bestellung;
     bearbeiteBestellungIndex = null;
@@ -174,6 +192,11 @@ function manuellenArtikelHinzufuegen() {
   document.getElementById('manuellerArtikelPreis').value = '';
   updateWarenkorb();
 }
+function getVersandFuerAktuellenKunden(){
+  if (!aktuellerKunde) return 0;
+  const vk = versandkostenProLand[aktuellerKunde.land];
+  return Number(vk) || 0;
+}
 function updateWarenkorb() {
   const liste = document.getElementById('warenkorbListe');
   const preis = document.getElementById('gesamtpreis');
@@ -191,6 +214,19 @@ function updateWarenkorb() {
     liste.appendChild(li);
     summe += item.menge * (item.Preis ?? item.preis);
   });
+  const vk = getVersandFuerAktuellenKunden();
+if (vk > 0) {
+  const liV = document.createElement('li');
+  liV.style.marginTop = '6px';
+  liV.style.paddingTop = '6px';
+  liV.style.borderTop = '1px dashed #ccc';
+  liV.innerHTML = `
+    <strong>Versand (${aktuellerKunde.land})</strong><br>
+    1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
+  `;
+  liste.appendChild(liV);
+  summe += vk;
+}
   preis.textContent = 'Gesamt: ' + summe.toFixed(2) + ' €';
 }
 
