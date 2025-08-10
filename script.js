@@ -173,41 +173,6 @@ function istVersandPosition(p){
   const nr   = String(p?.Artikelnummer || p?.artikelnummer || '');
   return name === 'versand' || nr.startsWith('VERSAND-');
 }
-
-const bestellung = {
-  kunde: aktuellerKunde,
-  positionen: positionenOhneVersand,
-  lieferdatum: document.getElementById('lieferdatum').value,
-  kommentar: document.getElementById('kommentar').value,
-  timestamp: Date.now() // Zeitstempel als Auftragsnummer
-};
-  if (bearbeiteBestellungIndex !== null) {
-    bestellungen[bearbeiteBestellungIndex] = bestellung;
-    bearbeiteBestellungIndex = null;
-  } else {
-    bestellungen.push(bestellung);
-  }
-
-  localStorage.setItem('bestellungen', JSON.stringify(bestellungen));
-  warenkorb = [];
-  updateWarenkorb();
-  document.getElementById('gespeicherteListe').style.display = 'none';
-  updateBestellStatistik();
-
-  // Formular zurücksetzen
-  ['lieferdatum','kommentar','kundeSuche','firma','vorname','nachname','strasse','plz','ort','ustid','telefon','email'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  aktuellerKunde = null;
-  aktuellerKundeAnzeige.textContent = '';
-  sperrhinweis.textContent = '';
-  document.getElementById('land').value = 'Deutschland';
-  document.getElementById('neukundeFormular').style.display = 'none';
-  document.getElementById('ustid').style.display = 'none';
-
-  alert('Bestellung gespeichert!');
-}
 function manuellenArtikelHinzufuegen() {
   const name = document.getElementById('manuellerArtikelName').value.trim();
   const preis = parseFloat(document.getElementById('manuellerArtikelPreis').value.replace(',', '.'));
@@ -254,9 +219,9 @@ if (vk > 0) {
   liV.style.paddingTop = '6px';
   liV.style.borderTop = '1px dashed #ccc';
   liV.innerHTML = `
-    <strong>Versand (${aktuellerKunde.land})</strong><br>
-    1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
-  `;
+  <strong>Versand (${aktuellerKunde?.land || '-'})</strong><br>
+  1 × ${vk.toFixed(2)} € = ${vk.toFixed(2)} €
+`;
   liste.appendChild(liV);
   summe += vk;
 }
@@ -377,7 +342,7 @@ function zeigeGespeicherteBestellungen() {
     return;
   }
 
-  bestellungen.forEach((b, index) => {
+    bestellungen.forEach((b, index) => {
     let gesamtwert = 0;
     b.positionen.forEach(p => {
       const menge = Number(p.menge)||0, preis = Number(p.Preis ?? p.preis)||0;
@@ -394,8 +359,9 @@ function zeigeGespeicherteBestellungen() {
       <hr>
     `;
     container.appendChild(div);
-  });
-  }
+  }); // <-- schließt den forEach
+}      // <-- schließt die Funktion
+
 function bearbeiteBestellung(index) {
   const bestellung = bestellungen[index];
   aktuellerKunde = bestellung.kunde;
