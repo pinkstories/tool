@@ -1,3 +1,14 @@
+
+const versandkostenProLand = {
+  "Deutschland": 14.90,
+  "Österreich": 24.90,
+  "Frankreich": 24.90,
+  "Niederlande": 19.90,
+  "Schweiz": 39.00,
+  "Belgien": 19.90
+};
+
+
 // Kunden- und Artikel-Daten
 let kunden = [...KundenData]; // Großes K!
 let aktuellerKunde = null;
