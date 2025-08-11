@@ -602,7 +602,6 @@ async function toCanvasSafe(file, maxSide=2000) {
 }
 
 // Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
-// Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
 async function ocrImage(file, onStatus) {
   const update = (msg) => { if (onStatus) onStatus(msg); };
 
@@ -679,11 +678,15 @@ async function ocrImage(file, onStatus) {
     const canvas = await runWithTimeout(fileToCanvas(file), 12000, 'Bild vorbereiten');
 
     // -> ImageData statt Blob/ImageBitmap an den Worker (fix für Safari DataCloneError)
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // -> DataURL (JPEG) an den Worker schicken – Safari-sicher
+const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
 
-    update('Erkenne Text…');
-    const { data: { text } } = await runWithTimeout(worker.recognize(imageData), 60000, 'Texterkennung');
+update('Erkenne Text…');
+const { data: { text } } = await runWithTimeout(
+  worker.recognize(dataUrl),
+  60000,
+  'Texterkennung'
+);
 
     return text;
   } finally {
