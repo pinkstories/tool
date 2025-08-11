@@ -521,22 +521,24 @@ window.addEventListener('DOMContentLoaded', () => {
     prevText.textContent = '';
 
     try {
-      const text = await ocrImage(file, status => statusEl.textContent = status);
-      prevText.textContent = text;
-      prevWrap.style.display = 'block';
+    // 🔁 HEIC-Fotos vom iPad zuerst in JPEG wandeln
+    file = await ensureJpeg(file);
 
-      const data = parseBusinessCardText(text);
-      fillCustomerForm(data);
-      statusEl.textContent = 'Felder aus Visitenkarte befüllt – bitte prüfen.';
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = 'Fehler beim Lesen der Visitenkarte.';
-      alert('Konnte die Visitenkarte nicht lesen. Bitte versuche ein schärferes Foto mit guter Beleuchtung.');
-    } finally {
-      fileInput.value = '';
-    }
-  });
-})();
+    const text = await ocrImage(file, s => statusEl.textContent = s);
+    prevText.textContent = text;
+    prevWrap.style.display = 'block';
+
+    const data = parseBusinessCardText(text);
+    fillCustomerForm(data);
+    statusEl.textContent = 'Felder aus Visitenkarte befüllt – bitte prüfen.';
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Fehler beim Lesen der Visitenkarte.';
+    alert('Konnte die Visitenkarte nicht lesen. Bitte versuche ein schärferes Foto mit guter Beleuchtung.');
+  } finally {
+    fileInput.value = '';
+  }
+});
 
 // OCR: liest Bild mit Tesseract.js (offline im Browser)
 async function ensureJpeg(file) {
@@ -599,6 +601,23 @@ async function toCanvasSafe(file, maxSide=2000) {
 // Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
 async function ocrImage(file, onStatus) {
   const update = (msg) => { if (onStatus) onStatus(msg); };
+try {
+  update('Sprachdaten laden…');
+  await runWithTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
+  await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU laden');
+  await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
+} catch (e) {
+  console.warn('DEU via naptha nicht verfügbar, versuche Mirror…', e);
+  // Mirror nutzen
+  await worker.setParameters({ langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_best' });
+  try {
+    await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU (Mirror) laden');
+    await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren (Mirror)');
+  } catch {
+    console.warn('Falle auf ENG zurück.');
+    await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
+  }
+}
 
   // --- Hilfen ---
   const runWithTimeout = (p, ms, label='Vorgang') =>
