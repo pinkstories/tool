@@ -605,14 +605,11 @@ async function toCanvasSafe(file, maxSide=2000) {
 async function ocrImage(file, onStatus) {
   const update = (msg) => { if (onStatus) onStatus(msg); };
 
-  // --- Hilfen ---
+  // Helper: Timeout
   const runWithTimeout = (p, ms, label='Vorgang') =>
-    Promise.race([
-      p,
-      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
-    ]);
+    Promise.race([ p, new Promise((_, rej)=>setTimeout(()=>rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms)) ]);
 
-  // File -> Canvas (DataURL-Weg, läuft auf iOS/Safari stabil)
+  // File -> Canvas (DataURL-Weg, stabil auf iOS/Safari)
   const fileToCanvas = (file) => new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onerror = () => reject(new Error('Konnte Bild nicht lesen.'));
@@ -620,9 +617,9 @@ async function ocrImage(file, onStatus) {
       const img = new Image();
       img.onload = () => {
         const maxSide = 2000;
-        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-        const w = Math.round(img.naturalWidth * scale);
-        const h = Math.round(img.naturalHeight * scale);
+        const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth  * s));
+        const h = Math.max(1, Math.round(img.naturalHeight * s));
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
         const ctx = c.getContext('2d');
@@ -631,14 +628,14 @@ async function ocrImage(file, onStatus) {
         resolve(c);
       };
       img.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'));
-      img.src = fr.result; // Data-URL
+      img.src = fr.result; // Data URL
     };
     fr.readAsDataURL(file);
   });
 
-  // --- Tesseract Worker ---
+  // Worker mit festen Pfaden (verhindert 404 auf relative send.js/worker)
   const worker = await Tesseract.createWorker({
-    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/worker.min.js',
     corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
     langPath:   'https://tessdata.projectnaptha.com/4.0.0_best',
     logger: m => {
@@ -649,27 +646,24 @@ async function ocrImage(file, onStatus) {
     }
   });
 
-  let terminated = false;
-  const safeTerminate = async () => { if (!terminated) { terminated = true; try { await worker.terminate(); } catch {} } };
-
   try {
     update('Lade OCR…');
     await runWithTimeout(worker.load(), 15000, 'Worker laden');
 
-    // Sprachen laden/initialisieren (mit Mirror-Fallback)
+    // Sprachen laden (Mirror-Fallback)
     try {
       update('Sprachdaten laden…');
       await runWithTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
       await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU laden');
       await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
     } catch (e) {
-      console.warn('DEU nicht verfügbar, versuche Mirror…', e);
+      console.warn('DEU nicht verfügbar, nutze Mirror…', e);
       await worker.setParameters({ langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_best' });
       try {
         await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU (Mirror) laden');
         await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren (Mirror)');
       } catch {
-        console.warn('Falle auf ENG zurück.');
+        console.warn('Falle auf ENG zurück');
         await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
       }
     }
@@ -677,20 +671,20 @@ async function ocrImage(file, onStatus) {
     update('Bereite Bild vor…');
     const canvas = await runWithTimeout(fileToCanvas(file), 12000, 'Bild vorbereiten');
 
-    // -> ImageData statt Blob/ImageBitmap an den Worker (fix für Safari DataCloneError)
-    // -> DataURL (JPEG) an den Worker schicken – Safari-sicher
-const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    // 🚫 KEIN ImageData / File / ImageBitmap -> ✅ DataURL-String (clonable)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    if (typeof dataUrl !== 'string') throw new Error('Kein DataURL erzeugt');
 
-update('Erkenne Text…');
-const { data: { text } } = await runWithTimeout(
-  worker.recognize(dataUrl),
-  60000,
-  'Texterkennung'
-);
+    update('Erkenne Text…');
+    const { data: { text } } = await runWithTimeout(
+      worker.recognize(dataUrl), // <-- hier der String!
+      60000,
+      'Texterkennung'
+    );
 
     return text;
   } finally {
-    await safeTerminate();
+    try { await worker.terminate(); } catch {}
   }
 }
 // Heuristiken zum Parsen der typischen Felder
