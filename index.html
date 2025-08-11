@@ -46,6 +46,16 @@
     <input id="ustid" placeholder="USt-ID (nur EU-Ausland)" style="display:none;"/>
     <input id="telefon" placeholder="* Telefon"/>
     <input id="email" placeholder="* E-Mail"/>
+    <!-- Visitenkarte scannen -->
+<div style="margin:10px 0; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+  <input id="cardImage" type="file" accept="image/*" capture="environment" style="display:none;">
+  <button id="scanCardBtn" type="button">📷 Visitenkarte scannen</button>
+  <span id="ocrStatus" style="font-size:.9rem;color:#555;"></span>
+</div>
+<details id="ocrPreview" style="display:none; margin:.5rem 0;">
+  <summary>Erkannter Text anzeigen</summary>
+  <pre id="ocrText" style="white-space:pre-wrap;background:#f7f7f7;padding:.5rem;border:1px solid #eee;border-radius:6px;max-height:180px;overflow:auto;"></pre>
+</details>
     <button onclick="neukundeSpeichern()">Neukunde speichern</button>
   </div>
   <div id="gespeicherteListe" style="margin-top: 10px; display: none;"></div>
