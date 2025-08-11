@@ -539,69 +539,105 @@ window.addEventListener('DOMContentLoaded', () => {
 })();
 
 // OCR: liest Bild mit Tesseract.js (offline im Browser)
-async function ocrImage(file, onStatus){
-  const update = msg => { if (onStatus) onStatus(msg); };
+async function ensureJpeg(file) {
+  const type = (file.type || '').toLowerCase();
+  if (type.includes('heic') || type.includes('heif')) {
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    return new File([blob], (file.name || 'photo') + '.jpg', { type: 'image/jpeg' });
+  }
+  return file;
+}
 
-  // Worker mit expliziten Pfaden – verhindert Hänger durch falsche URLs
-  const worker = await Tesseract.createWorker({
-    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-    corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
-    langPath:   'https://tessdata.projectnaptha.com/4.0.0_best', // gute Modelle; alternativ _fast
-    logger: m => {
-      if (m?.status) {
-        if (m.status === 'recognizing text') update(`Erkenne Text… ${Math.round((m.progress||0)*100)}%`);
-        else update(m.status);
-      }
-    }
-  });
-
-  let terminated = false;
-  const safeTerminate = async () => { if (!terminated) { terminated = true; try { await worker.terminate(); } catch {} } };
-
-  // Bild vorbereiten (max 2000px Kante, beschleunigt)
-  const toCanvas = async (file) => {
-    const img = await createImageBitmap(file);
-    const maxSide = 2000;
+async function toCanvasSafe(file, maxSide=2000) {
+  // versuche createImageBitmap, fallback auf <img>
+  const draw = (img) => {
     const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const cw = Math.max(1, Math.round(img.width * scale));
+    const ch = Math.max(1, Math.round(img.height * scale));
     const c = document.createElement('canvas');
-    c.width = Math.round(img.width * scale);
-    c.height = Math.round(img.height * scale);
+    c.width = cw; c.height = ch;
     const ctx = c.getContext('2d');
     ctx.filter = 'contrast(120%) brightness(105%)';
-    ctx.drawImage(img, 0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, cw, ch);
     return c;
   };
 
-  const runWithTimeout = (p, ms, label='Vorgang') =>
-    Promise.race([
-      p,
-      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
-    ]);
+  // Safari-weg: DataURL + <img>
+  const asImageElem = async (blob) => {
+    const dataURL = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+    return await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = dataURL;
+    });
+  };
 
   try {
-    update('Lade OCR…');
-    // Einmalig Sprache(n) laden & initialisieren – **kein** doppeltes initialize
-    await runWithTimeout(worker.load(), 15000, 'Worker laden');
+    const bmp = await createImageBitmap(file);
+    // aus ImageBitmap ein HTMLImageElement machen:
+    const c = document.createElement('canvas');
+    c.width = bmp.width; c.height = bmp.height;
+    c.getContext('2d').drawImage(bmp, 0, 0);
+    const img = await new Promise((res) => {
+      const el = new Image();
+      el.onload = () => res(el);
+      el.src = c.toDataURL('image/jpeg', 0.92);
+    });
+    return draw(img);
+  } catch {
+    const img = await asImageElem(file);
+    return draw(img);
+  }
+}
 
-    // Versuche eng+deu, falle auf eng zurück falls z. B. deu nicht erreichbar
+async function ocrImage(file, onStatus){
+  const update = (s)=>{ if (onStatus) onStatus(s); };
+
+  // Timeout helper
+  const withTimeout = (p, ms, label='Vorgang') =>
+    Promise.race([
+      p,
+      new Promise((_, rej)=> setTimeout(()=>rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
+    ]);
+
+  let worker;
+  try {
+    update('Lade OCR…');
+    file = await ensureJpeg(file);                   // HEIC → JPEG
+    const canvas = await withTimeout(toCanvasSafe(file, 2000), 15000, 'Bild vorbereiten');
+
+    worker = await Tesseract.createWorker({
+      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+      corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
+      langPath:   'https://tessdata.projectnaptha.com/4.0.0_best',
+      logger: m => {
+        if (m?.status === 'recognizing text') update(`Erkenne Text… ${Math.round((m.progress||0)*100)}%`);
+        else if (m?.status) update(m.status);
+      }
+    });
+
+    await withTimeout(worker.load(), 15000, 'Worker laden');
+
     try {
-      await runWithTimeout(worker.loadLanguage('eng+deu'), 30000, 'Sprachdaten laden');
-      await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
+      await withTimeout(worker.loadLanguage('eng+deu'), 30000, 'Sprachdaten laden');
+      await withTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
     } catch (e) {
-      console.warn('DEU nicht verfügbar, weiche auf ENG aus:', e);
-      await runWithTimeout(worker.loadLanguage('eng'), 20000, 'Sprache ENG laden');
-      await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
+      console.warn('Fallback auf ENG:', e);
+      await withTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
+      await withTimeout(worker.initialize('eng'), 15000, 'ENG initialisieren');
     }
 
-    update('Bereite Bild vor…');
-    const canvas = await runWithTimeout(toCanvas(file), 10000, 'Bild vorbereiten');
-
     update('Erkenne Text…');
-    const { data: { text } } = await runWithTimeout(worker.recognize(canvas), 45000, 'Texterkennung');
-
+    const { data:{ text } } = await withTimeout(worker.recognize(canvas), 60000, 'Texterkennung');
     return text;
   } finally {
-    await safeTerminate();
+    try { if (worker) await worker.terminate(); } catch {}
   }
 }
 
