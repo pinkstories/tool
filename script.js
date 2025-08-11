@@ -514,31 +514,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
   btn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];         // <-- let, nicht const
     if (!file) return;
+
     statusEl.textContent = 'Bild wird gelesen… (kann je nach Gerät 5–20 s dauern)';
     prevWrap.style.display = 'none';
     prevText.textContent = '';
 
     try {
-    // 🔁 HEIC-Fotos vom iPad zuerst in JPEG wandeln
-    file = await ensureJpeg(file);
+      // HEIC vom iPad → JPEG
+      file = await ensureJpeg(file);
 
-    const text = await ocrImage(file, s => statusEl.textContent = s);
-    prevText.textContent = text;
-    prevWrap.style.display = 'block';
+      const text = await ocrImage(file, s => statusEl.textContent = s);
+      prevText.textContent = text;
+      prevWrap.style.display = 'block';
 
-    const data = parseBusinessCardText(text);
-    fillCustomerForm(data);
-    statusEl.textContent = 'Felder aus Visitenkarte befüllt – bitte prüfen.';
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = 'Fehler beim Lesen der Visitenkarte.';
-    alert('Konnte die Visitenkarte nicht lesen. Bitte versuche ein schärferes Foto mit guter Beleuchtung.');
-  } finally {
-    fileInput.value = '';
-  }
-});
+      const data = parseBusinessCardText(text);
+      fillCustomerForm(data);
+      statusEl.textContent = 'Felder aus Visitenkarte befüllt – bitte prüfen.';
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'Fehler beim Lesen der Visitenkarte.';
+      alert('Konnte die Visitenkarte nicht lesen. Bitte versuche ein schärferes Foto mit guter Beleuchtung.');
+    } finally {
+      fileInput.value = '';
+    }
+  });
+})(); // <-- IIFE sauber schließen
+
 
 // OCR: liest Bild mit Tesseract.js (offline im Browser)
 async function ensureJpeg(file) {
@@ -599,25 +602,9 @@ async function toCanvasSafe(file, maxSide=2000) {
 }
 
 // Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
+// Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
 async function ocrImage(file, onStatus) {
   const update = (msg) => { if (onStatus) onStatus(msg); };
-try {
-  update('Sprachdaten laden…');
-  await runWithTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
-  await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU laden');
-  await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
-} catch (e) {
-  console.warn('DEU via naptha nicht verfügbar, versuche Mirror…', e);
-  // Mirror nutzen
-  await worker.setParameters({ langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_best' });
-  try {
-    await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU (Mirror) laden');
-    await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren (Mirror)');
-  } catch {
-    console.warn('Falle auf ENG zurück.');
-    await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
-  }
-}
 
   // --- Hilfen ---
   const runWithTimeout = (p, ms, label='Vorgang') =>
@@ -626,7 +613,7 @@ try {
       new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
     ]);
 
-  // File -> Canvas (ohne createImageBitmap; Safari mag das im Worker nicht)
+  // File -> Canvas (DataURL-Weg, läuft auf iOS/Safari stabil)
   const fileToCanvas = (file) => new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onerror = () => reject(new Error('Konnte Bild nicht lesen.'));
@@ -640,7 +627,6 @@ try {
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
         const ctx = c.getContext('2d');
-        // leichte Vorverarbeitung hilft OCR
         ctx.filter = 'contrast(120%) brightness(105%)';
         ctx.drawImage(img, 0, 0, w, h);
         resolve(c);
@@ -653,7 +639,6 @@ try {
 
   // --- Tesseract Worker ---
   const worker = await Tesseract.createWorker({
-    // Fixe Pfade -> vermeidet Hänger durch relative URLs
     workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
     corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
     langPath:   'https://tessdata.projectnaptha.com/4.0.0_best',
@@ -672,21 +657,28 @@ try {
     update('Lade OCR…');
     await runWithTimeout(worker.load(), 15000, 'Worker laden');
 
-    // Sprachen EINZELN laden (eng + deu). „eng+deu“ ist keine Datei!
+    // Sprachen laden/initialisieren (mit Mirror-Fallback)
     try {
       update('Sprachdaten laden…');
       await runWithTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
       await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU laden');
       await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
     } catch (e) {
-      console.warn('DEU nicht verfügbar, nutze nur ENG:', e);
-      await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
+      console.warn('DEU nicht verfügbar, versuche Mirror…', e);
+      await worker.setParameters({ langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_best' });
+      try {
+        await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU (Mirror) laden');
+        await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren (Mirror)');
+      } catch {
+        console.warn('Falle auf ENG zurück.');
+        await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
+      }
     }
 
     update('Bereite Bild vor…');
     const canvas = await runWithTimeout(fileToCanvas(file), 12000, 'Bild vorbereiten');
 
-    // *** WICHTIG: ImageData statt File/ImageBitmap an recognize -> vermeidet DataCloneError in Safari
+    // -> ImageData statt Blob/ImageBitmap an den Worker (fix für Safari DataCloneError)
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
@@ -698,9 +690,6 @@ try {
     await safeTerminate();
   }
 }
-
-
-
 // Heuristiken zum Parsen der typischen Felder
 function parseBusinessCardText(rawText){
   const text = rawText
