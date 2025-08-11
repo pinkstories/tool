@@ -502,3 +502,200 @@ window.addEventListener('DOMContentLoaded', () => {
   updateBestellStatistik();
   zeigeGespeicherteBestellungen();
 });
+// ===== Visitenkarte: OCR + Auto-Fill =====
+(function initCardScan(){
+  const btn = document.getElementById('scanCardBtn');
+  const fileInput = document.getElementById('cardImage');
+  const statusEl = document.getElementById('ocrStatus');
+  const prevWrap = document.getElementById('ocrPreview');
+  const prevText = document.getElementById('ocrText');
+
+  if(!btn || !fileInput) return;
+
+  btn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    statusEl.textContent = 'Bild wird gelesen… (kann je nach Gerät 5–20 s dauern)';
+    prevWrap.style.display = 'none';
+    prevText.textContent = '';
+
+    try {
+      const text = await ocrImage(file, status => statusEl.textContent = status);
+      prevText.textContent = text;
+      prevWrap.style.display = 'block';
+
+      const data = parseBusinessCardText(text);
+      fillCustomerForm(data);
+      statusEl.textContent = 'Felder aus Visitenkarte befüllt – bitte prüfen.';
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'Fehler beim Lesen der Visitenkarte.';
+      alert('Konnte die Visitenkarte nicht lesen. Bitte versuche ein schärferes Foto mit guter Beleuchtung.');
+    } finally {
+      fileInput.value = '';
+    }
+  });
+})();
+
+// OCR: liest Bild mit Tesseract.js (offline im Browser)
+async function ocrImage(file, onStatus){
+  const { createWorker } = Tesseract;
+  const worker = await createWorker({
+    logger: m => {
+      if (onStatus) {
+        if (m.status === 'recognizing text') onStatus(`Erkenne Text… ${Math.round((m.progress||0)*100)}%`);
+        else if (m.status) onStatus(m.status);
+      }
+    }
+  });
+
+  // Sprachen: erst eng, dann (wenn verfügbar) deu – beide zusammen sind oft am besten
+  await worker.loadLanguage('eng');
+  await worker.initialize('eng');
+  // Versuch, zusätzlich deutsch zu laden (fehlschlägt still, wenn offline CDN nicht cached)
+  try { await worker.loadLanguage('deu'); await worker.initialize('eng+deu'); } catch {}
+
+  // Bild als Bitmap zur besseren Performance
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width; canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  // leichte Vorverarbeitung: Kontrast erhöhen
+  ctx.filter = 'contrast(120%) brightness(105%)';
+  ctx.drawImage(bitmap, 0, 0);
+
+  const { data: { text } } = await worker.recognize(canvas);
+  await worker.terminate();
+  return text;
+}
+
+// Heuristiken zum Parsen der typischen Felder
+function parseBusinessCardText(rawText){
+  const text = rawText
+    .replace(/\u00AD/g, '') // Soft hyphen
+    .replace(/[^\S\r\n]+/g, ' ')
+    .trim();
+
+  // Zeilenweise arbeiten
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  const out = {
+    firma: '',
+    vorname: '',
+    nachname: '',
+    strasse: '',
+    plz: '',
+    ort: '',
+    land: '',
+    ustid: '',
+    telefon: '',
+    email: ''
+  };
+
+  // E-Mail
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  if (emailMatch) out.email = emailMatch[0];
+
+  // Telefon (nimmt erste plausible Nummer, mit Ländervorwahl etc.)
+  const telMatch = text.match(/(?:Tel\.?|Phone|Telefon|Mob\.?|Mobile|Handy)?[:\s]*([+()\s/.-]*\d[\d\s/().-]{5,})/i);
+  if (telMatch) out.telefon = telMatch[1].replace(/\s{2,}/g,' ').trim();
+
+  // USt-Id (mehrere Länderformate grob)
+  const vatMatch = text.match(/\b(?:DE|ATU|FR|NL|BE|LU|IT|ES|PT|IE|GB|CH)\s?[A-Z0-9]{6,}\b/i);
+  if (vatMatch) out.ustid = vatMatch[0].replace(/\s+/g,'');
+
+  // Land (Liste der UI-Länder)
+  const countries = ['Deutschland','Österreich','Frankreich','Italien','Niederlande','Schweiz','Belgien'];
+  const landLine = lines.find(l => countries.some(c => new RegExp(c,'i').test(l)));
+  if (landLine) {
+    out.land = countries.find(c => new RegExp(c,'i').test(landLine)) || '';
+  } else {
+    // aus PLZ-Format grob schätzen
+    if (/\b\d{5}\b/.test(text)) out.land = 'Deutschland';
+    else if (/\b[A]\d{3,4}\b/.test(text)) out.land = 'Österreich';
+    else if (/\b\d{4}\b/.test(text) && /CH|Schweiz/i.test(text)) out.land = 'Schweiz';
+    else if (/\b\d{5}\b/.test(text) && /FR|France|Frankreich/i.test(text)) out.land = 'Frankreich';
+    else if (/\b\d{4}\b/.test(text) && /BE|Belgium|Belgien/i.test(text)) out.land = 'Belgien';
+    else if (/\b\d{4}\s?[A-Z]{2}\b/.test(text) || /NL|Netherlands|Niederlande/i.test(text)) out.land = 'Niederlande';
+  }
+
+  // Adresse (Straße + PLZ + Ort)
+  // Straße: etwas mit „str.“/„straße“ oder Nummer am Ende
+  const streetIdx = lines.findIndex(l => /\b(str\.?|straße|strasse)\b/i.test(l) || /\d+[a-zA-Z]?$/.test(l));
+  if (streetIdx >= 0) {
+    out.strasse = lines[streetIdx];
+    // Nächste Zeile könnte PLZ/Ort sein
+    const next = lines[streetIdx+1] || '';
+    // DE/AT: 5-stellig / 4-stellig; FR/NL/BE variieren – ein paar häufige Muster:
+    let m = next.match(/\b(\d{4,5})\s+([A-Za-zÀ-ÿ.\-'\s]+)\b/);
+    if (!m) m = lines[streetIdx].match(/\b(\d{4,5})\s+([A-Za-zÀ-ÿ.\-'\s]+)\b/); // manchmal in einer Zeile
+    if (!m) {
+      // NL: 1234 AB Stadt
+      m = next.match(/\b(\d{4})\s*([A-Z]{2})\s+([A-Za-zÀ-ÿ.\-'\s]+)\b/);
+      if (m) { out.plz = `${m[1]} ${m[2]}`; out.ort = m[3].trim(); }
+    } else {
+      out.plz = m[1];
+      out.ort = (m[2] || '').trim();
+    }
+  }
+
+  // Firma + Name (heuristisch aus den obersten Zeilen ohne E-Mail/Telefon/Adresse)
+  const ignorePatterns = [
+    /@/, /Tel|Phone|Mobil|Mobile|Handy/i, /\b(?:DE|ATU|FR|NL|BE|LU|IT|ES|PT|IE|GB|CH)\s?[A-Z0-9]{6,}\b/i,
+    /\b(\d{4,5})\b/, /\d{4}\s?[A-Z]{2}/
+  ];
+  const headerLines = lines.filter(l => !ignorePatterns.some(rx => rx.test(l)));
+
+  if (headerLines.length) {
+    // Erste geeignete Zeile als Firma (wenn groß geschrieben oder GmbH/AG/SARL/etc.)
+    const firmIdx = headerLines.findIndex(l => /\b(GmbH|AG|UG|SARL|S\.?A\.?|BV|NV|SRL|LLC|Inc\.?)\b/i.test(l));
+    const firmLine = firmIdx >= 0 ? headerLines[firmIdx] : headerLines[0];
+    out.firma = firmLine;
+
+    // Name: suche eine Zeile mit 2 Wörtern (Initialen groß)
+    const nameLine = headerLines.find(l => /\b[A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß'-]+\b/.test(l));
+    if (nameLine) {
+      const [vn, ...rest] = nameLine.split(/\s+/);
+      out.vorname = vn;
+      out.nachname = rest.join(' ');
+      // Falls die „Firma“ irrtümlich der Name war, und eine zweite Zeile existiert, rotiere
+      if (out.firma === nameLine && headerLines[1]) out.firma = headerLines[1];
+    }
+  }
+
+  // Aufräumen: häufige Artefakte
+  out.strasse = out.strasse.replace(/\s{2,}/g,' ').trim();
+  out.ort = out.ort.replace(/\s{2,}/g,' ').trim();
+  out.firma = out.firma.replace(/\s{2,}/g,' ').trim();
+  out.vorname = out.vorname.trim();
+  out.nachname = out.nachname.trim();
+
+  return out;
+}
+
+// Überträgt geparste Daten in deine Formularfelder
+function fillCustomerForm(d){
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+
+  set('firma', d.firma);
+  set('vorname', d.vorname);
+  set('nachname', d.nachname);
+  set('strasse', d.strasse);
+  set('plz', d.plz);
+  set('ort', d.ort);
+  set('telefon', d.telefon);
+  set('email', d.email);
+  set('ustid', d.ustid);
+
+  const landSel = document.getElementById('land');
+  if (landSel && d.land) {
+    // Auf einen deiner Select-Werte mappen, falls Text minimal abweicht
+    const options = Array.from(landSel.options).map(o => o.value);
+    const match = options.find(o => new RegExp('^' + o + '$','i').test(d.land)) || '';
+    if (match) landSel.value = match;
+
+    // USt-ID Feld anzeigen, falls EU-Ausland
+    ustidFeld.style.display = (landSel.value !== 'Deutschland') ? 'block' : 'none';
+  }
+}
