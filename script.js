@@ -596,50 +596,90 @@ async function toCanvasSafe(file, maxSide=2000) {
   }
 }
 
-async function ocrImage(file, onStatus){
-  const update = (s)=>{ if (onStatus) onStatus(s); };
+// Safari-sicheres OCR: keine File/ImageBitmap-Übergabe an den Worker
+async function ocrImage(file, onStatus) {
+  const update = (msg) => { if (onStatus) onStatus(msg); };
 
-  // Timeout helper
-  const withTimeout = (p, ms, label='Vorgang') =>
+  // --- Hilfen ---
+  const runWithTimeout = (p, ms, label='Vorgang') =>
     Promise.race([
       p,
-      new Promise((_, rej)=> setTimeout(()=>rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
+      new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} Timeout nach ${ms/1000}s`)), ms))
     ]);
 
-  let worker;
+  // File -> Canvas (ohne createImageBitmap; Safari mag das im Worker nicht)
+  const fileToCanvas = (file) => new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('Konnte Bild nicht lesen.'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxSide = 2000;
+        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.round(img.naturalWidth * scale);
+        const h = Math.round(img.naturalHeight * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        // leichte Vorverarbeitung hilft OCR
+        ctx.filter = 'contrast(120%) brightness(105%)';
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(c);
+      };
+      img.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'));
+      img.src = fr.result; // Data-URL
+    };
+    fr.readAsDataURL(file);
+  });
+
+  // --- Tesseract Worker ---
+  const worker = await Tesseract.createWorker({
+    // Fixe Pfade -> vermeidet Hänger durch relative URLs
+    workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+    corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
+    langPath:   'https://tessdata.projectnaptha.com/4.0.0_best',
+    logger: m => {
+      if (m?.status) {
+        if (m.status === 'recognizing text') update(`Erkenne Text… ${Math.round((m.progress||0)*100)}%`);
+        else update(m.status);
+      }
+    }
+  });
+
+  let terminated = false;
+  const safeTerminate = async () => { if (!terminated) { terminated = true; try { await worker.terminate(); } catch {} } };
+
   try {
     update('Lade OCR…');
-    file = await ensureJpeg(file);                   // HEIC → JPEG
-    const canvas = await withTimeout(toCanvasSafe(file, 2000), 15000, 'Bild vorbereiten');
+    await runWithTimeout(worker.load(), 15000, 'Worker laden');
 
-    worker = await Tesseract.createWorker({
-      workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
-      corePath:   'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/tesseract-core.wasm.js',
-      langPath:   'https://tessdata.projectnaptha.com/4.0.0_best',
-      logger: m => {
-        if (m?.status === 'recognizing text') update(`Erkenne Text… ${Math.round((m.progress||0)*100)}%`);
-        else if (m?.status) update(m.status);
-      }
-    });
-
-    await withTimeout(worker.load(), 15000, 'Worker laden');
-
+    // Sprachen EINZELN laden (eng + deu). „eng+deu“ ist keine Datei!
     try {
-      await withTimeout(worker.loadLanguage('eng+deu'), 30000, 'Sprachdaten laden');
-      await withTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
+      update('Sprachdaten laden…');
+      await runWithTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
+      await runWithTimeout(worker.loadLanguage('deu'), 20000, 'DEU laden');
+      await runWithTimeout(worker.initialize('eng+deu'), 15000, 'Initialisieren');
     } catch (e) {
-      console.warn('Fallback auf ENG:', e);
-      await withTimeout(worker.loadLanguage('eng'), 20000, 'ENG laden');
-      await withTimeout(worker.initialize('eng'), 15000, 'ENG initialisieren');
+      console.warn('DEU nicht verfügbar, nutze nur ENG:', e);
+      await runWithTimeout(worker.initialize('eng'), 15000, 'Initialisieren ENG');
     }
 
+    update('Bereite Bild vor…');
+    const canvas = await runWithTimeout(fileToCanvas(file), 12000, 'Bild vorbereiten');
+
+    // *** WICHTIG: ImageData statt File/ImageBitmap an recognize -> vermeidet DataCloneError in Safari
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
     update('Erkenne Text…');
-    const { data:{ text } } = await withTimeout(worker.recognize(canvas), 60000, 'Texterkennung');
+    const { data: { text } } = await runWithTimeout(worker.recognize(imageData), 60000, 'Texterkennung');
+
     return text;
   } finally {
-    try { if (worker) await worker.terminate(); } catch {}
+    await safeTerminate();
   }
 }
+
 
 
 // Heuristiken zum Parsen der typischen Felder
