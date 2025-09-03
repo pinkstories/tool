@@ -103,10 +103,22 @@ function neukundeSpeichern() {
     telefon: document.getElementById('telefon').value.trim(),
     email: document.getElementById('email').value.trim()
   };
-  if (!k.name || !k.vorname || !k.nachname || !k.strasse || !k.plz || !k.ort || !k.telefon || !k.email || (k.land !== "Deutschland" && k.ustid === '')) {
+
+  // EU-Länder, bei denen UID Pflicht ist (außer Deutschland)
+  const euLaender = [
+    "Frankreich", "Österreich", "Italien",
+    "Niederlande", "Belgien", "Luxemburg", "Spanien", "Griechenland"
+  ];
+
+  if (
+    !k.name || !k.vorname || !k.nachname || !k.strasse || !k.plz ||
+    !k.ort || !k.telefon || !k.email ||
+    (euLaender.includes(k.land) && k.ustid === '')
+  ) {
     alert('Bitte alle Pflichtfelder ausfüllen.');
     return;
   }
+
   kunden.push(k);
   aktuellerKunde = k;
   aktuellerKundeAnzeige.textContent = `Neukunde: ${k.name} (${k.ort})`;
@@ -817,7 +829,13 @@ function fillCustomerForm(d){
     const match = options.find(o => new RegExp('^' + o + '$','i').test(d.land)) || '';
     if (match) landSel.value = match;
 
-    // USt-ID Feld anzeigen, falls EU-Ausland
-    ustidFeld.style.display = (landSel.value !== 'Deutschland') ? 'block' : 'none';
+  // Statistik beim Laden der Seite direkt anzeigen
+window.addEventListener('DOMContentLoaded', () => {
+  updateBestellStatistik();
+  zeigeGespeicherteBestellungen();
+
+  // UID-Feld abhängig vom Startwert anzeigen
+  ustidFeld.style.display = (landDropdown.value !== "Deutschland") ? "block" : "none";
+});
   }
 }
