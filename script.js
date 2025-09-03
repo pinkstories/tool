@@ -117,7 +117,10 @@ function neukundeSpeichern() {
 function bestellungSpeichern() {
   if (!aktuellerKunde) { alert('Bitte zuerst einen Kunden auswählen.'); return; }
   if (warenkorb.length === 0) { alert('Bitte mindestens ein Produkt in den Warenkorb legen.'); return; }
-
+const zahlungsbedingungen = document.getElementById('zahlungsbedingungen').value;
+  if (!zahlungsbedingungen) {
+    alert('Bitte Zahlungsbedingungen auswählen.');
+    return;
   // 1) Falls doch Versand im Warenkorb wäre: rausfiltern
   const positionenOhneVersand = warenkorb
     .filter(p => !istVersandPosition(p))
@@ -138,7 +141,7 @@ function bestellungSpeichern() {
     kunde: aktuellerKunde,
     positionen: positionenOhneVersand,
     lieferdatum: document.getElementById('lieferdatum').value,
-    kommentar: document.getElementById('kommentar').value,
+    kommentar: document.getElementById('kommentar').value, zahlungsbedingungen
     timestamp: Date.now()
   };
 
@@ -387,6 +390,7 @@ function bearbeiteBestellung(index) {
 
   document.getElementById('lieferdatum').value = bestellung.lieferdatum || '';
   document.getElementById('kommentar').value = bestellung.kommentar || '';
+  document.getElementById('zahlungsbedingungen').value = bestellung.zahlungsbedingungen || "";
   bearbeiteBestellungIndex = index;
   updateWarenkorb();
   aktuellerKundeAnzeige.textContent = `Kunde: ${aktuellerKunde.name} (${aktuellerKunde.ort})`;
@@ -440,7 +444,7 @@ function exportiereWeclappCSV() {
       row[2]  = b.lieferdatum || "";           // Geplantes Lieferdatum
       row[3]  = "EUR";                         // Währung
       row[4]  = "";                            // Auftragsart
-      row[5]  = "";                            // Zahlungsbedingungen
+      row[5]  = b.zahlungsbedingungen || "";   // Zahlungsbedingungen
       row[6]  = "";                            // Versandart
       row[7]  = "";                            // Lieferbedingungen
       row[8]  = "";                            // Zahlungsart
