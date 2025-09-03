@@ -100,17 +100,21 @@
   <label for="kommentar">Kommentare oder Wünsche:</label>
   <textarea id="kommentar"></textarea>
   <div id="speicherButtons" style="margin-top: 10px;">
-    <button onclick="bestellungSpeichern()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
-      💾 Bestellung speichern
-    </button>
-    <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
-      📂 Bestellungen ein-/ausblenden
-    </button>
-    <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
-      🗑️ Alle Bestellungen löschen
-    </button>
-    <button onclick="exportiereWeclappCSV()">📤 Weclapp-CSV exportieren</button>
-  </div>
+  <button onclick="bestellungSpeichern()" style="background-color: #007bff; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
+    💾 Bestellung speichern
+  </button>
+  <button onclick="druckeAuftrag()" style="background-color: #28a745; color: white; padding: 6px 10px; border: none; margin-right: 8px;">
+    🖨️ Auftrag drucken
+  </button>
+  <button onclick="toggleGespeicherteBestellungen()" style="background-color: #6c757d; color: white; padding: 6px 10px; border: none;">
+    📂 Bestellungen ein-/ausblenden
+  </button>
+  <button onclick="loescheAlleBestellungen()" style="background-color: #dc3545; color: white; padding: 6px 10px; border: none; margin-left: 8px;">
+    🗑️ Alle Bestellungen löschen
+  </button>
+  <button onclick="exportiereWeclappCSV()">📤 Weclapp-CSV exportieren</button>
+</div>
+
 </div>
 <script src="KundenData.js"></script>
 <script src="ArtikelData.js"></script>
