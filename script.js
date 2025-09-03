@@ -198,7 +198,7 @@ function druckeAuftrag() {
       <title>Auftrag</title>
       <style>
         body { font-family: sans-serif; margin: 20px; }
-        h1 { text-align: center; margin-top: 10px; }
+        h1 { text-align: center; margin-top: 10px; font-size: 22px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #000; padding: 6px; text-align: left; }
         .header { display: flex; justify-content: space-between; align-items: center; }
