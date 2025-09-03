@@ -211,14 +211,14 @@ function druckeAuftrag() {
     </head>
     <body>
       <div class="header">
+        <div class="logo">
+          <img src="Logo.png" alt="Logo">
+        </div>
         <div>
           <h1>Commande / Order / Auftrag M&O 09/25</h1>
           <p><strong>Datum:</strong> ${datum}</p>
         </div>
-        <div class="logo">
-          <img src="Logo.png" alt="Logo">
         </div>
-      </div>
 
       <p><strong>Kunde:</strong> ${b.kunde.name}, ${b.kunde.strasse}, ${b.kunde.plz} ${b.kunde.ort}, ${b.kunde.land}</p>
       <p><strong>E-Mail:</strong> ${b.kunde.email}</p>
@@ -268,9 +268,9 @@ function druckeAuftrag() {
         <span class="lang">Deutsch</span>
         Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.
         </div>      
-
-
-      
+<br>
+<br>
+<br>      
       <div class="signatur">
         <div>Unterschrift Kunde</div>
         <div>Unterschrift Mitarbeiter</div>
