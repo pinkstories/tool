@@ -202,7 +202,7 @@ function druckeAuftrag() {
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #000; padding: 6px; text-align: left; }
         .header { display: flex; justify-content: space-between; align-items: center; }
-        .header .logo img { max-height: 80px; }
+        .header .logo img { max-width: 100px; max-height: 50px; height: auto; }
         .signatur { margin-top: 50px; display: flex; justify-content: space-between; }
         .signatur div { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 5px; }
         .disclaimer { font-size: 0.85em; margin-top: 20px; line-height: 1.4; }
@@ -259,15 +259,17 @@ function druckeAuftrag() {
       </table>
       
       <div class="disclaimer">
-        <span class="lang">Deutsch</span>
-        Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.
+        <span class="lang">Français</span>
+        Par ma signature, je reconnais que ce bon de commande constitue une commande juridiquement contraignante et je confirme avoir lu, compris et accepté toutes les conditions qui y figurent ainsi que les conditions générales applicables.
         
         <span class="lang">English</span>
         By signing, I acknowledge this order as a legally binding purchase and confirm that I have read, understood, and accepted all terms and conditions stated herein as well as the applicable general terms and conditions.
-        
-        <span class="lang">Français</span>
-        Par ma signature, je reconnais que ce bon de commande constitue une commande juridiquement contraignante et je confirme avoir lu, compris et accepté toutes les conditions qui y figurent ainsi que les conditions générales applicables.
-      </div>      
+
+        <span class="lang">Deutsch</span>
+        Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.
+        </div>      
+
+
       
       <div class="signatur">
         <div>Unterschrift Kunde</div>
