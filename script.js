@@ -5,7 +5,14 @@ const versandkostenProLand = {
   "Frankreich": 24.90,
   "Niederlande": 19.90,
   "Schweiz": 39.00,
-  "Belgien": 19.90
+  "Belgien": 19.90,
+  "Luxemburg": 19.90,
+  "Italien": 24.90,
+  "Spanien": 29.90,
+  "Griechenland": 39.00,
+  "Großbritannien": 29.90,
+  "USA": 99.00,
+  "Kanada": 99.00,
 };
 
 
