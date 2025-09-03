@@ -81,7 +81,14 @@
   <ul id="warenkorbListe"></ul>
   <p id="gesamtpreis">Gesamt: 0,00 €</p>
   <label for="lieferdatum">Gewünschter Liefertermin:</label>
-  <input id="lieferdatum" type="date"/>
+<select id="lieferdatum">
+  <option value="">Bitte wählen...</option>
+  <option value="Dringend">Dringend</option>
+  <option value="Mitte Oktober">Mitte Oktober</option>
+  <option value="Ende Oktober">Ende Oktober</option>
+  <option value="Anfang November">Anfang November</option>
+</select>
+
   <label for="kommentar">Kommentare oder Wünsche:</label>
   <textarea id="kommentar"></textarea>
   <div id="speicherButtons" style="margin-top: 10px;">
