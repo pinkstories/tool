@@ -183,6 +183,80 @@ updateBestellStatistik();
 
   alert('Bestellung gespeichert!');
 }
+function druckeAuftrag() {
+  if (!bestellungen.length) {
+    alert("Keine Bestellung gefunden!");
+    return;
+  }
+  
+  const b = bestellungen[bestellungen.length - 1]; // letzte Bestellung
+  let html = `
+    <html>
+    <head>
+      <title>Auftrag</title>
+      <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+        .signatur { margin-top: 50px; display: flex; justify-content: space-between; }
+        .signatur div { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 5px; }
+      </style>
+    </head>
+    <body>
+      <h1>Auftrag</h1>
+      <p><strong>Kunde:</strong> ${b.kunde.name}, ${b.kunde.strasse}, ${b.kunde.plz} ${b.kunde.ort}, ${b.kunde.land}</p>
+      <p><strong>Telefon:</strong> ${b.kunde.telefon} | <strong>E-Mail:</strong> ${b.kunde.email}</p>
+      <p><strong>Zahlungsbedingungen:</strong> ${b.zahlungsbedingungen}</p>
+      <p><strong>Liefertermin:</strong> ${b.lieferdatum}</p>
+      <p><strong>Kommentar:</strong> ${b.kommentar}</p>
+
+      <table>
+        <tr>
+          <th>Artikelnummer</th>
+          <th>Bezeichnung</th>
+          <th>Menge</th>
+          <th>Preis (€)</th>
+          <th>Summe (€)</th>
+        </tr>`;
+
+  let summe = 0;
+  b.positionen.forEach(p => {
+    const menge = Number(p.menge) || 0;
+    const preis = Number(p.Preis ?? p.preis) || 0;
+    const zwSumme = menge * preis;
+    summe += zwSumme;
+    html += `
+      <tr>
+        <td>${p.Artikelnummer || ''}</td>
+        <td>${p.Name || p.name}</td>
+        <td>${menge}</td>
+        <td>${preis.toFixed(2)}</td>
+        <td>${zwSumme.toFixed(2)}</td>
+      </tr>`;
+  });
+
+  html += `
+        <tr>
+          <td colspan="4" style="text-align:right;"><strong>Gesamt:</strong></td>
+          <td><strong>${summe.toFixed(2)}</strong></td>
+        </tr>
+      </table>
+
+      <div class="signatur">
+        <div>Unterschrift Kunde</div>
+        <div>Unterschrift Mitarbeiter</div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const printWin = window.open('', '_blank');
+  printWin.document.write(html);
+  printWin.document.close();
+  printWin.focus();
+  printWin.print();
+}
 
 function istVersandPosition(p){
   const name = (p?.Name || p?.name || '').trim().toLowerCase();
