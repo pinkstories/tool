@@ -13,6 +13,7 @@ const versandkostenProLand = {
   "Großbritannien": 29.90,
   "USA": 99.00,
   "Kanada": 99.00,
+  "Sonstige": 149.00
 };
 
 
