@@ -193,7 +193,7 @@ function druckeAuftrag() {
   let html = `
     <html>
     <head>
-      <title>Auftrag</title>
+      <title>Commande/Order/Auftrag M&O 09/25</title>
       <style>
         body { font-family: sans-serif; margin: 20px; }
         h1 { text-align: center; }
@@ -242,7 +242,10 @@ function druckeAuftrag() {
           <td><strong>${summe.toFixed(2)}</strong></td>
         </tr>
       </table>
-
+<div>Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.</div>
+<div>By signing, I acknowledge this order as a legally binding purchase and confirm that I have read, understood, and accepted all terms and conditions stated herein as well as the applicable general terms and conditions.</div>
+<div>Par ma signature, je reconnais que ce bon de commande constitue une commande juridiquement contraignante et je confirme avoir lu, compris et accepté toutes les conditions qui y figurent ainsi que les conditions générales applicables.</div>      
+      
       <div class="signatur">
         <div>Unterschrift Kunde</div>
         <div>Unterschrift Mitarbeiter</div>
