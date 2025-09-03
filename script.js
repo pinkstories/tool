@@ -190,23 +190,38 @@ function druckeAuftrag() {
   }
   
   const b = bestellungen[bestellungen.length - 1]; // letzte Bestellung
+  const datum = new Date(b.timestamp).toLocaleString('de-DE'); // Datum & Uhrzeit
+  
   let html = `
     <html>
     <head>
-      <title>Commande/Order/Auftrag M&O 09/25</title>
+      <title>Auftrag</title>
       <style>
         body { font-family: sans-serif; margin: 20px; }
-        h1 { text-align: center; }
+        h1 { text-align: center; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #000; padding: 6px; text-align: left; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .header .logo img { max-height: 80px; }
         .signatur { margin-top: 50px; display: flex; justify-content: space-between; }
         .signatur div { width: 45%; text-align: center; border-top: 1px solid #000; padding-top: 5px; }
+        .disclaimer { font-size: 0.85em; margin-top: 20px; line-height: 1.4; }
+        .lang { font-weight: bold; display: block; margin-top: 10px; }
       </style>
     </head>
     <body>
-      <h1>Auftrag</h1>
+      <div class="header">
+        <div>
+          <h1>Commande / Order / Auftrag M&O 09/25</h1>
+          <p><strong>Datum:</strong> ${datum}</p>
+        </div>
+        <div class="logo">
+          <img src="Logo.png" alt="Logo">
+        </div>
+      </div>
+
       <p><strong>Kunde:</strong> ${b.kunde.name}, ${b.kunde.strasse}, ${b.kunde.plz} ${b.kunde.ort}, ${b.kunde.land}</p>
-      <p><strong>Telefon:</strong> ${b.kunde.telefon} | <strong>E-Mail:</strong> ${b.kunde.email}</p>
+      <p><strong>E-Mail:</strong> ${b.kunde.email}</p>
       <p><strong>Zahlungsbedingungen:</strong> ${b.zahlungsbedingungen}</p>
       <p><strong>Liefertermin:</strong> ${b.lieferdatum}</p>
       <p><strong>Kommentar:</strong> ${b.kommentar}</p>
@@ -242,9 +257,17 @@ function druckeAuftrag() {
           <td><strong>${summe.toFixed(2)}</strong></td>
         </tr>
       </table>
-<div>Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.</div>
-<div>By signing, I acknowledge this order as a legally binding purchase and confirm that I have read, understood, and accepted all terms and conditions stated herein as well as the applicable general terms and conditions.</div>
-<div>Par ma signature, je reconnais que ce bon de commande constitue une commande juridiquement contraignante et je confirme avoir lu, compris et accepté toutes les conditions qui y figurent ainsi que les conditions générales applicables.</div>      
+      
+      <div class="disclaimer">
+        <span class="lang">Deutsch</span>
+        Mit meiner Unterschrift erkenne ich diesen Auftrag als rechtsverbindliche Bestellung an und bestätige, dass ich sämtliche darin aufgeführten Bedingungen sowie die zugrunde liegenden allgemeinen Geschäftsbedingungen gelesen, verstanden und akzeptiert habe.
+        
+        <span class="lang">English</span>
+        By signing, I acknowledge this order as a legally binding purchase and confirm that I have read, understood, and accepted all terms and conditions stated herein as well as the applicable general terms and conditions.
+        
+        <span class="lang">Français</span>
+        Par ma signature, je reconnais que ce bon de commande constitue une commande juridiquement contraignante et je confirme avoir lu, compris et accepté toutes les conditions qui y figurent ainsi que les conditions générales applicables.
+      </div>      
       
       <div class="signatur">
         <div>Unterschrift Kunde</div>
