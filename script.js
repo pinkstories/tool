@@ -121,6 +121,7 @@ const zahlungsbedingungen = document.getElementById('zahlungsbedingungen').value
   if (!zahlungsbedingungen) {
     alert('Bitte Zahlungsbedingungen auswählen.');
     return;
+   } 
   // 1) Falls doch Versand im Warenkorb wäre: rausfiltern
   const positionenOhneVersand = warenkorb
     .filter(p => !istVersandPosition(p))
@@ -141,7 +142,7 @@ const zahlungsbedingungen = document.getElementById('zahlungsbedingungen').value
     kunde: aktuellerKunde,
     positionen: positionenOhneVersand,
     lieferdatum: document.getElementById('lieferdatum').value,
-    kommentar: document.getElementById('kommentar').value, zahlungsbedingungen
+    kommentar: document.getElementById('kommentar').value, zahlungsbedingungen,
     timestamp: Date.now()
   };
 
