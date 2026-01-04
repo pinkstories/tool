@@ -223,7 +223,7 @@ function druckeAuftrag() {
           <img src="Logo.png" alt="Logo">
         </div>
         <div>
-          <h1>Commande / Order / Auftrag M&O 09/25</h1>
+          <h1>Commande / Order / Auftrag trendset 01/26</h1>
           <p><strong>Datum:</strong> ${datum}</p>
         </div>
         </div>
